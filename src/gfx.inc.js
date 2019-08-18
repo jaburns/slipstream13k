@@ -233,7 +233,7 @@ let gfx_createMotionCubeMap = () =>{
     cube[f] = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, cube[f]);
     for(var i=0; i<6; i++){
-        gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, gl.RGB, s, s, 0, gl.RGB, gl.FLOAT, null);
+        gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, gl.RGBA, s, s, 0, gl.RGBA, ext.HALF_FLOAT_OES, null);
     }
     for(var i=0; i<6;i++){
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, cube[f], 0);
