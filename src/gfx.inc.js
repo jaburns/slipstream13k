@@ -113,11 +113,6 @@ let gfx_compileProgram = (vert, frag) => {
     gl.attachShader(prog, fragShader);
     gl.linkProgram(prog);
 
-    if (__DEBUG) {
-        let vertLog = gl.getShaderInfoLog(vertShader);
-        if (vertLog === null || vertLog.length > 0) showHTMLShaderError('Link Error', vertLog, vert);
-    }
-
     return prog;
 };
 
