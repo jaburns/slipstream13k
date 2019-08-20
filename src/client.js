@@ -17,8 +17,9 @@ let socket = io()
   , blobs = __binaryBlobs
   , lastState
   , currentState
-  , skyboxProg = gfx_compileProgram(skybox_vert,skybox_frag)
+  , skyboxProg = gfx_compileProgram(skybox_vert, skybox_frag)
   , cubeProg = gfx_compileProgram(cube_vert, cube_frag)
+  , motionProg = gfx_compileProgram(motion_vert, motion_frag)
   , blurPassProg = gfx_compileProgram(fullQuad_vert, blurPass_frag)
   , pickBloomPassProg = gfx_compileProgram(fullQuad_vert, pickBloomPass_frag)
   , depthPass = gfx_compileProgram(fullQuad_vert,renderDepth_frag)
@@ -26,7 +27,7 @@ let socket = io()
   , copyProg = gfx_compileProgram(fullQuad_vert,copy_frag)
   , composePassProg = gfx_compileProgram(fullQuad_vert, composePass_frag)
   , fxaaPassProg = gfx_compileProgram(fullQuad_vert, fxaaPass_frag)
-  , frameBuffers = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()]
+  , frameBuffers = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()]
   , swap = 0
   , frame = 0
   , cubeTexture = gfx_createCubeMap()
@@ -34,17 +35,19 @@ let socket = io()
   , cubeModel
   , aspectRatio
   , soundEffect
-  , lastProjection
   , projectionMatrix
   , viewMatrix
+  , lastViewMatrix
   , transform = Transform_create()
+  , oldTransforms = []
   , resizeFunc = () => {
-        let w = innerWidth, h = innerHeight;
+        let w = innerWidth/2, h = innerHeight/2;
         C.width = w;
         C.height = h;
         frameBuffers[0].r(w, h);
         frameBuffers[1].r(w, h);
         frameBuffers[2].r(w, h);
+        frameBuffers[3].r(w,h);
         gl.viewport(0, 0, w, h);
         aspectRatio = w / h;
     };
@@ -65,6 +68,48 @@ socket.on("connect", () => {
 });
 
 gl.clearColor(0, 0, 0, 1);
+
+let drawMotion = state => {
+    gl.enable(gl.DEPTH_TEST);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    
+    
+    let cubeProg = motionProg;
+    gl.useProgram(cubeProg);
+
+
+    state.forEach((player, i) => {
+        let t = Date.now() / 10000 + i*1.7;
+        transform.r = quat_setAxisAngle([.16,.81,.57], t);
+        transform.p[0] = 4*player.x - 2;
+        transform.p[1] = 4*player.y - 2;
+        transform.p[2] = -3;
+
+
+        let modelMatrix = Transform_toMatrix(transform);
+
+        if(typeof oldTransforms[i] =='undefined'){
+            oldTransforms[i]=modelMatrix;
+        }
+
+        
+        let mvp = mat4_multiply(mat4_multiply(projectionMatrix,viewMatrix), modelMatrix);
+        let mvpOld = mat4_multiply(mat4_multiply(projectionMatrix,lastViewMatrix),oldTransforms[i]);
+
+        oldTransforms[i]=modelMatrix;
+
+        gl.uniformMatrix4fv(gl.getUniformLocation(cubeProg, 'u_mvp'), false, mvp);
+        gl.uniformMatrix4fv(gl.getUniformLocation(cubeProg, 'u_mvp_old'), false, mvpOld);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeModel.v);
+        let posLoc = gl.getAttribLocation(cubeProg, 'a_position');
+        gl.enableVertexAttribArray(posLoc);
+        gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeModel.i);
+        gl.drawElements(gl.TRIANGLES, cubeModel.t, gl.UNSIGNED_SHORT, 0);
+    });
+};
 
 let drawScene = state => {
     gl.enable(gl.DEPTH_TEST);
@@ -128,16 +173,21 @@ let drawScene = state => {
 
 let render = state => {
     nextswap = (swap+1)%2;
-    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffers[2].f);
     
     projectionMatrix = mat4_perspective(aspectRatio, .2, 100);
     viewMatrix = mat4_fromRotationTranslationScale(quat_setAxisAngle([0,1,0],Math.cos(Date.now()/1000)*0.1),[0,0,0],[1,1,1])
 
     let projection = mat4_multiply(projectionMatrix,viewMatrix);
-    if(lastProjection==null) lastProjection=projection;
+    if(lastViewMatrix==null) lastViewMatrix=viewMatrix;
+    let lastProjection = mat4_multiply(projectionMatrix,lastViewMatrix)
     let reproject = mat4_multiply(lastProjection,mat4_invert(projection));
 
-    lastProjection = projection;
+    lastViewMatrix = viewMatrix;
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffers[3].f);
+    drawMotion(state);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffers[2].f);
 
     drawScene(state);
 
@@ -153,6 +203,10 @@ let render = state => {
         gl.activeTexture(gl.TEXTURE2);
         gl.bindTexture(gl.TEXTURE_2D, frameBuffers[2].d);
         gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth'), 2);
+
+        gl.activeTexture(gl.TEXTURE5);
+        gl.bindTexture(gl.TEXTURE_2D, frameBuffers[3].t);
+        gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_motion'), 5);
 
         gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_vp'), false, mat4_invert(projection));
 

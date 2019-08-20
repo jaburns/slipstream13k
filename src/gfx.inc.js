@@ -154,9 +154,9 @@ let gfx_createFrameBufferTexture = () => {
         d: depthTexture,
         r(width, height) { // resize()
             gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, ext.HALF_FLOAT_OES, null);
 
-            gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+            gl.bindTexture(gl.TEXTURE_2D, depthTexture); // TODO don't always do this
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, width, height, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
         }
     };
