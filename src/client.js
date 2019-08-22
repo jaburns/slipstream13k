@@ -125,6 +125,7 @@ let drawScene = state => {
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+        //gl.bindTexture(gl.TEXTURE_CUBE_MAP, motionCubeTexture[0]);
         gl.uniform1i(gl.getUniformLocation(skyboxProg, "u_tex"), 0);
         let inv_vp = mat4_invert(mat4_multiply(projectionMatrix,viewMatrix));
         gl.uniformMatrix4fv(gl.getUniformLocation(skyboxProg, 'u_inv_vp'), false, inv_vp);

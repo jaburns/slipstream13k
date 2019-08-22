@@ -136,9 +136,9 @@ uniform float u_slice;
 void main()
 {
     float _Slice = u_slice;
-  	float t = 1.;
+  	float t = 0.1;
     gl_FragColor = vec4(0);
     vec3 dir = u_rot*vec3(v_uv*2.-1.,1);
-    vec3 ray = dir/length(dir);
-		gl_FragColor.rg = curl2d(vec4(ray * 300., _Slice * 30.*t))*0.4+curl2d(vec4(ray * 100., _Slice * 10. * t))*0.6+curl2d(vec4(ray * 30., _Slice*3. * t)) + curl2d(vec4(ray * 10., _Slice*1. * t)) + curl2d(vec4(ray*3., _Slice*0.3*t));
+    vec3 ray = dir/length(dir)*.4;
+		gl_FragColor.rg = curl2d(vec4(ray * 300., _Slice * 30.*t))/30.+curl2d(vec4(ray * 100., _Slice * 10. * t))/10.+curl2d(vec4(ray * 30., _Slice*3. * t))/3. + curl2d(vec4(ray * 10., _Slice*1. * t)) + curl2d(vec4(ray*3., _Slice*0.3*t))/0.3;
 }
