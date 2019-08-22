@@ -41,7 +41,7 @@ let socket = io()
   , transform = Transform_create()
   , oldTransforms = []
   , resizeFunc = () => {
-        let w = innerWidth/2, h = innerHeight/2;
+        let w = innerWidth, h = innerHeight;
         C.width = w;
         C.height = h;
         frameBuffers[0].r(w, h);
@@ -182,10 +182,12 @@ let render = state => {
     let lastProjection = mat4_multiply(projectionMatrix,lastViewMatrix)
     let reproject = mat4_multiply(lastProjection,mat4_invert(projection));
 
-    lastViewMatrix = viewMatrix;
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffers[3].f);
     drawMotion(state);
+
+    lastViewMatrix = viewMatrix;
+
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffers[2].f);
 
@@ -211,7 +213,7 @@ let render = state => {
         gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_vp'), false, mat4_invert(projection));
 
         let FRAMES = 16;
-        let subFrames=3;
+        let subFrames=12;
         let f = ~~(frame/subFrames) % (FRAMES * 2 - 1);
         gl.activeTexture(gl.TEXTURE3);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, motionCubeTexture[Math.abs(f-(FRAMES-1))]);

@@ -116,29 +116,33 @@ float snoise(vec4 v)
 
 }
 
-vec2 curl2d(vec4 p)
-{
-	vec3 e = vec3(0.001, -0.001, 0.0);
-	float fxp = snoise(p + vec4(e.xzz,0));
-	float fxm = snoise(p + vec4(e.yzz,0));
-	float fyp = snoise(p + vec4(e.zxz,0));
-	float fym = snoise(p + vec4(e.zyz,0));
-
-	vec2 c = vec2((fyp - fym) / (2.*e.x),
-		(-fxp + fxm) / (2.*e.x));
-	return c;
-}
 
 varying vec2 v_uv;
 uniform mat3 u_rot;
 uniform float u_slice;
 
+float turb(vec3 p,float gain, float lac,int iter){
+	float sum = 0.;
+	for(float i=0.; i<10.; i++){
+	  float g = pow(gain,i);
+	  float l = lac * pow(2.,i);
+		float spd = lac * pow(2.,floor(i/2.));
+		sum=max(0.,min(1.,sum+g*abs(snoise(vec4(p*l,1.)))));
+	}
+	return max(0.,min(1.,sum));
+}
+
 void main()
 {
-    float _Slice = u_slice;
-  	float t = 1.;
-    gl_FragColor = vec4(0);
     vec3 dir = u_rot*vec3(v_uv*2.-1.,1);
-    vec3 ray = dir/length(dir);
-		gl_FragColor.rg = curl2d(vec4(ray * 300., _Slice * 30.*t))*0.4+curl2d(vec4(ray * 100., _Slice * 10. * t))*0.6+curl2d(vec4(ray * 30., _Slice*3. * t)) + curl2d(vec4(ray * 10., _Slice*1. * t)) + curl2d(vec4(ray*3., _Slice*0.3*t));
+    vec3 p = dir/length(dir)/10.;
+
+    float n = turb(vec3(
+							turb(p,0.6,4.,5),
+							turb(p+vec3(0.2,0.2,0.2),0.6,4.,5),
+              turb(p+vec3(0.4,0.4,0.4),0.6,4.,5)
+							)
+							,0.3,2.,8);
+
+		gl_FragColor = vec4(vec3(1,1,1)*n*float(n>0.3),1);
 }

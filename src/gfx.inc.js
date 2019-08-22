@@ -181,9 +181,30 @@ let gfx_createFrameBufferTexture = () => {
     return result;
 };
 
+rotations = [
+    [ 0, 0, -1,
+      0, 1, 0,
+      1, 0, 0],
+    [ 0, 0, 1,
+      0, 1, 0,
+     -1, 0, 0],
+    [ 1, 0, 0,
+      0, 0,1,
+      0, -1, 0],
+    [ 1, 0, 0,
+      0, 0,-1,
+      0, 1, 0],
+    [ 1, 0, 0,
+      0, 1, 0,
+      0, 0, 1],
+    [-1, 0, 0,
+      0, 1, 0,
+      0, 0,-1]
+];
+
 let gfx_createCubeMap = () =>{
 
-    let shader = gfx_compileProgram(fullQuad_vert,genSkybox_frag);
+    let shader = gfx_compileProgram(fullQuad_vert,sky_frag);
     let s = 1024;
 
     let framebuffer = gl.createFramebuffer();
@@ -197,19 +218,10 @@ let gfx_createCubeMap = () =>{
     for(var i=0; i<6;i++){
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, cube, 0);
         gl.viewport(0,0,s,s);
-        v = -~~(i%2*2-1);
-        p = ~~(i/2);
-        let xpos = [(p==0)*v,(p==1)*v,(p==2)*v];
-        let ypos = [p==1,p!=1,0];
-        let zpos = vec3_cross(xpos,ypos);
-        let rotation = xpos.concat(ypos).concat(zpos);
-        if(p==1){
-            rotation = ypos.concat(zpos).concat(xpos);
-        }
 
         gfx_renderBuffer(shader,null,()=>{
 
-            gl.uniformMatrix3fv(gl.getUniformLocation(shader, 'u_rot'), false,rotation);
+            gl.uniformMatrix3fv(gl.getUniformLocation(shader, 'u_rot'), false,rotations[i]);
 
         });
     }
@@ -238,19 +250,9 @@ let gfx_createMotionCubeMap = () =>{
     for(var i=0; i<6;i++){
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, cube[f], 0);
         gl.viewport(0,0,s,s);
-        v = -~~(i%2*2-1);
-        p = ~~(i/2);
-        let xpos = [(p==0)*v,(p==1)*v,(p==2)*v];
-        let ypos = [p==1,p!=1,0];
-        let zpos = vec3_cross(xpos,ypos);
-        let rotation = xpos.concat(ypos).concat(zpos);
-        if(p==1){
-            rotation = ypos.concat(zpos).concat(xpos);
-        }
-
         gfx_renderBuffer(shader,null,()=>{
 
-            gl.uniformMatrix3fv(gl.getUniformLocation(shader, 'u_rot'), false,rotation);
+            gl.uniformMatrix3fv(gl.getUniformLocation(shader, 'u_rot'), false,rotations[i]);
             console.log(f/FRAMES);
             gl.uniform1f(gl.getUniformLocation(shader, 'u_slice'),f/FRAMES);
 
