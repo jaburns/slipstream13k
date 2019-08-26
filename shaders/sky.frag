@@ -144,5 +144,5 @@ void main()
 							)
 							,0.3,2.,8);
 
-		gl_FragColor = vec4(vec3(1,1,1)*n*float(n>0.3),1);
+		gl_FragColor = vec4(n*float(n>0.3),0.,0.,1.);
 }
