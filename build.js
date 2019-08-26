@@ -10,7 +10,7 @@ const ADVZIP_TOOL = process.platform === 'win32' ? '..\\tools\\advzip.exe' : '..
 
 const MINIFY = process.argv[2] === '--small';
 
-let shaderMinNames = 'abcdefghijklmnopqrstuvwxyz'.split('').map(x => 'z' + x);
+let shaderMinNames = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(x => 'z' + x);
 
 const extractGLSLFunctionName = proto =>
     proto.substring(proto.indexOf(' ') + 1, proto.indexOf('('));
@@ -60,6 +60,11 @@ const convertSongDataFormat = code => {
             + code.substr(endLoc + 1);
     }
 };
+
+// TODO: Dont try to minify imported shader code name. 
+// __include should just behave as a basic concatentation, with the caveat that names in a .glsl include are not minified.
+// Later we can revisit included function minification
+
 
 const findShaderIncludes = code => code
     .split('\n')
@@ -225,14 +230,18 @@ const mangleGLCalls_firstPass = code => {
     const allCollisions = findHashCollisions(genHash, webglFuncs.concat(['STENCIL_INDEX','releaseShaderCompiler']));
     const localCollisions = glCalls.map(x => allCollisions.indexOf(x) >= 0 ? x : null).filter(x => x !== null);
 
-    if (localCollisions.length > 0) {
-        console.log('');
-        console.log('WARNING: The source is using one or more WebGL calls which collide in the mangler:');
-        console.log(localCollisions);
-        console.log('The following identifiers are currently not mangled uniquely:');
-        console.log(allCollisions);
-        console.log('');
+    if (localCollisions.indexOf('uniform4iv') >= 0) {
+        console.log('ERROR Sorry cant use uniform4iv!!');
+        process.exit(1);
     }
+    //if (localCollisions.length > 0) {
+    //    console.log('');
+    //    console.log('WARNING: The source is using one or more WebGL calls which collide in the mangler:');
+    //    console.log(localCollisions);
+    //    console.log('The following identifiers are currently not mangled uniquely:');
+    //    console.log(allCollisions);
+    //    console.log('');
+    //}
 
     code = replaceGLConstants(code);
 

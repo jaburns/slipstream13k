@@ -4,7 +4,7 @@ const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 const code = fs.readFileSync('./build/server.js', 'utf8');
-const shared = fs.readFileSync('./build/shared.js', 'utf8');
+const shared = fs.existsSync('./build/shared.js') ? fs.readFileSync('./build/shared.js', 'utf8') : '';
 
 function createSandbox() {
     const sandbox = {
