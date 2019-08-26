@@ -17,5 +17,7 @@ public class GenerateModelFile : MonoBehaviour
     void doGenerate()
     {
         Debug.Log(ModelDataFileSerializer.Serialize(gameObject).Length);
+
+        ModelDataFileSerializer.Deserialize(ModelDataFileSerializer.Serialize(gameObject));
     }
 }
