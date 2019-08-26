@@ -3,23 +3,66 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 
+/*
+Scale byte:
+    1 bit sign
+    1 bit above decimal
+    6 bits below decimal
+
+Rotation byte:
+    1 bit sign
+    7 bits below decimal
+
+Position byte:
+    1 bit sign
+    3 bit above decimal
+    4 bits below decimal
+
+struct Model
+{
+    flatShaded: bit
+    materialIndex: 7bit
+
+    scale: 3byte
+    originX: 3byte
+
+    numVerts: byte
+
+    verts: 3byte[numVerts]
+    tris: byte[]
+}
+
+struct Prefab
+{
+    modelOrPrefab: bit
+    itemIndex: 7bit
+
+    scale: 3byte
+    pos: 3byte
+    rotation: 3byte
+}
+
+struct ModelDataFile
+{
+    numModels: byte
+    numPrefabs: byte
+    
+    models: Model[numModels]
+    prefabs: Prefab[numPrefabs]
+}
+*/
+
 [ExecuteInEditMode]
 public class ExportModelFile : MonoBehaviour
 {
-    public bool exportAs8File = false;
-    public bool exportAs16File = false;
+    public bool export = false;
 
     void Update()
     {
-        if (exportAs8File)
+        if (export)
         {
-            exportAs8File = false;
-            doRun(false);
-        }
-        else if(exportAs16File) 
-        {
-            exportAs16File = false;
-            doRun(true);
+            export = false;
+            doRun();
         }
     }
 
@@ -48,27 +91,16 @@ public class ExportModelFile : MonoBehaviour
         return mf.sharedMesh;
     }
 
-    void doRun(bool mode16)
+    void doRun()
     {
         var result = new List<byte>();
 
         var mesh = GetMesh();
 
-        if (mode16)
+        if (mesh.vertices.Length > 0x100)
         {
-            if (mesh.vertices.Length > 0x10000)
-            {
-                Debug.LogError("Cannot have more than " + 0x10000 + " vertices in a .16 file");
-                return;
-            }
-        }
-        else
-        {
-            if (mesh.vertices.Length > 0x100)
-            {
-                Debug.LogError("Cannot have more than " + 0x100 + " vertices in a .8 file");
-                return;
-            }
+            Debug.LogError("Cannot have more than " + 0x100 + " vertices in a mesh!");
+            return;
         }
 
         var originBytes = packVec3(mesh.bounds, Vector3.zero);
@@ -88,12 +120,9 @@ public class ExportModelFile : MonoBehaviour
 
         result.AddRange(mesh.vertices.SelectMany(v => packVec3(mesh.bounds, v)));
 
-        if (mode16) 
-            result.AddRange(mesh.triangles.SelectMany(t => new byte[] { (byte)(t % 256), (byte)(t / 256) }));
-        else 
-            result.AddRange(mesh.triangles.Select(t => (byte)t));
+        result.AddRange(mesh.triangles.Select(t => (byte)t));
 
-        File.WriteAllBytes(Application.dataPath + "/exported." + (mode16 ? "16" : "8"), result.ToArray());
+        File.WriteAllBytes(Application.dataPath + "/exported.models", result.ToArray());
     }
 }
 
