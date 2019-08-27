@@ -62,12 +62,11 @@ let meshLoader_loadBufferObjectsFromModelFile_legacy = (bytes) => {
     let numVerts = bytes[6] + 256*bytes[7];
     let triOffset = 8 + 3*numVerts;
 
-    let verts = [];
-    let vertSub = bytes.subarray(8, triOffset);
-    for (let i = 0; i < vertSub.length; i += 3) {
-        verts.push(vertSub[i  ] / 256 * scaleX - originX);
-        verts.push(vertSub[i+1] / 256 * scaleY - originY);
-        verts.push(vertSub[i+2] / 256 * scaleZ - originZ);
+    let verts = new Float32Array(bytes.subarray(8, triOffset));
+    for (let i = 0; i < verts.length; i += 3) {
+        verts[i  ] = verts[i  ] / 256 * scaleX - originX;
+        verts[i+1] = verts[i+1] / 256 * scaleY - originY;
+        verts[i+2] = verts[i+2] / 256 * scaleZ - originZ;
     }
 
     let tris = new Uint16Array(bytes.subarray(triOffset));
@@ -92,25 +91,24 @@ let meshLoader_loadMeshesBlob = bytes => {
         let originZ = bytes[ptr++] / 255 * scaleZ;
 
         let numVerts = bytes[ptr++];
-        let verts = [];
-        let vertSub = bytes.subarray(ptr, ptr += 3*numVerts);
-        for (let i = 0; i < vertSub.length; i += 3) {
-            verts.push(vertSub[i  ] / 255 * scaleX - originX);
-            verts.push(vertSub[i+1] / 255 * scaleY - originY);
-            verts.push(vertSub[i+2] / 255 * scaleZ - originZ);
+
+        let verts = new Float32Array(bytes.subarray(8, triOffset));
+        for (let i = 0; i < verts.length; i += 3) {
+            verts[i  ] = verts[i  ] / 256 * scaleX - originX;
+            verts[i+1] = verts[i+1] / 256 * scaleY - originY;
+            verts[i+2] = verts[i+2] / 256 * scaleZ - originZ;
         }
 
         let numTris = bytes[ptr++];
         let tris = new Uint16Array(bytes.subarray(ptr, ptr += 3*numTris));
 
+        let norms = [];
 
+        // TODO compute normals and/or flat shade.
 
         return {
             verts, tris, norms
-        }
-
-
-        // todo compute normals and/or flat shade.
+        };
     };
 
     {
