@@ -4,6 +4,8 @@
 public class GenerateModelFile : MonoBehaviour
 {
     [SerializeField] bool generate;
+    [SerializeField] int resultSize;
+    [SerializeField] Material[] foundMaterials;
 
     void Update()
     {
@@ -16,8 +18,14 @@ public class GenerateModelFile : MonoBehaviour
 
     void doGenerate()
     {
-        Debug.Log(ModelDataFileSerializer.Serialize(gameObject).Length);
+        var file = ModelDataFileSerializer.Serialize(gameObject);
+        resultSize = file.data.Length;
+        foundMaterials = file.materials;
 
-        ModelDataFileSerializer.Deserialize(ModelDataFileSerializer.Serialize(gameObject));
+        var oldExport = GameObject.Find("AllObjects_EXPORTED");
+        if (oldExport != null)
+            DestroyImmediate(oldExport);
+
+        ModelDataFileSerializer.Deserialize(file, "AllObjects_EXPORTED");
     }
 }

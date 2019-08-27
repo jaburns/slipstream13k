@@ -3,6 +3,13 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor;
 
+public class SerializedModelFile
+{
+    public byte[] data;
+    public Material[] materials;
+    public Dictionary<string, int> modelIndices;
+}
+
 static class ModelDataFileSerializer
 {
 /*  struct ModelDataFile
@@ -46,7 +53,7 @@ static class ModelDataFileSerializer
         tris: 3byte[numTris]
     }
 */
-    public static byte[] Serialize(GameObject topParent)
+    public static SerializedModelFile Serialize(GameObject topParent)
     {
         var meshes = topParent.GetComponentsInChildren<MeshFilter>()
             .Select(x => x.sharedMesh)
@@ -59,52 +66,78 @@ static class ModelDataFileSerializer
             .Distinct()
             .ToArray();
 
+        var flatShadedMeshes = topParent.GetComponentsInChildren<FlatShadeThisMesh>()
+            .Select(x => x.GetComponent<MeshFilter>().sharedMesh)
+            .Distinct()
+            .ToArray();
+
+        var materials = topParent.GetComponentsInChildren<MeshRenderer>()
+            .Select(x => x.sharedMaterial)
+            .Distinct()
+            .ToArray();
+
+        var materialsForMeshes = new Dictionary<Mesh, int>();
+
+        foreach (var mesh in meshes)
+            materialsForMeshes[mesh] = (materials as IList<Material>).IndexOf(
+                topParent.GetComponentsInChildren<MeshFilter>()
+                    .Where(x => x.sharedMesh == mesh)
+                    .First()
+                    .GetComponent<MeshRenderer>()
+                    .sharedMaterials[0]);
+
         var result = new List<byte>();
 
         result.Add((byte)meshes.Length);
 
         foreach (var mesh in meshes)
-            result.AddRange(serializeMesh(mesh, false, 0));
+            result.AddRange(serializeMesh(mesh, flatShadedMeshes.Contains(mesh), materialsForMeshes[mesh]));
 
         result.Add((byte)prefabPaths.Length);
 
         foreach (var path in prefabPaths)
             result.AddRange(serializePrefab(meshes, prefabPaths, AssetDatabase.LoadAssetAtPath(path, typeof(GameObject)) as GameObject));
 
-        return result.ToArray();
+        return new SerializedModelFile {
+            data = result.ToArray(),
+            materials = materials,
+            modelIndices = new Dictionary<string, int>()
+        };
     }
 
-    public static GameObject Deserialize(byte[] data)
+    public static GameObject Deserialize(SerializedModelFile modelFile, string objectName)
     {
         int ptr = 0;
 
-        var numMeshes = data[ptr++];
-        var meshes = new List<Mesh>();
+        var numMeshes = modelFile.data[ptr++];
+        var meshes = new List<DeserializedMesh>();
 
         for (var i = 0; i < numMeshes; ++i)
         {
-            var newMesh = deserializeMesh(data, ref ptr);
-            meshes.Add(newMesh.mesh);
+            var newMesh = deserializeMesh(modelFile.data, ref ptr);
+            meshes.Add(newMesh);
         }
 
-        var numPrefabs = data[ptr++];
+        var numPrefabs = modelFile.data[ptr++];
         var prefabs = new List<DeserializedChild[]>();
 
-        var result = new GameObject("AllObject_EXPORTED");
+        var result = new GameObject(objectName);
 
         for (var i = 0; i < numPrefabs; ++i)
         {
-            var newPrefab = deserializePrefab(data, ref ptr);
+            var newPrefab = deserializePrefab(modelFile.data, ref ptr);
             prefabs.Add(newPrefab);
         }
 
         for (var i = 0; i < numPrefabs; ++i)
-            instantiatePrefab(meshes, prefabs, i).transform.parent = result.transform;
+        {
+            instantiatePrefab(meshes, prefabs, i, modelFile.materials).transform.parent = result.transform;
+        }
 
         return result;
     }
 
-    static GameObject instantiatePrefab(IList<Mesh> meshes, IList<DeserializedChild[]> prefabs, int prefabIndex)
+    static GameObject instantiatePrefab(IList<DeserializedMesh> meshes, IList<DeserializedChild[]> prefabs, int prefabIndex, Material[] materials)
     {
         var result = new GameObject("PrefabObject");
         var prefab = prefabs[prefabIndex];
@@ -112,8 +145,8 @@ static class ModelDataFileSerializer
         foreach (var child in prefab)
         {
             var childObject = child.isPrefab
-                ? instantiatePrefab(meshes, prefabs, child.itemIndex)
-                : instantiateMeshObject(meshes[child.itemIndex]);
+                ? instantiatePrefab(meshes, prefabs, child.itemIndex, materials)
+                : instantiateMeshObject(meshes[child.itemIndex], materials);
 
             childObject.transform.parent = result.transform;
             childObject.transform.localPosition = child.position;
@@ -124,11 +157,11 @@ static class ModelDataFileSerializer
         return result;
     }
 
-    static GameObject instantiateMeshObject(Mesh mesh)
+    static GameObject instantiateMeshObject(DeserializedMesh mesh, Material[] materials)
     {
         var result = new GameObject("MeshObject");
-        result.AddComponent<MeshFilter>().sharedMesh = mesh;
-        result.AddComponent<MeshRenderer>();
+        result.AddComponent<MeshFilter>().sharedMesh = mesh.mesh;
+        result.AddComponent<MeshRenderer>().sharedMaterial = materials[mesh.materialIndex];
         return result;
     }
 
