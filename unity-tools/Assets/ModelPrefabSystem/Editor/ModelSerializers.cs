@@ -10,7 +10,7 @@ public class SerializedModelFile
     public Dictionary<string, int> modelIndices;
 }
 
-static class ModelDataFileSerializer
+static public class ModelDataFileSerializer
 {
 /*  struct ModelDataFile
     {
@@ -76,6 +76,16 @@ static class ModelDataFileSerializer
             .Distinct()
             .ToArray();
 
+        var topLevelObjectPaths = new List<string>();
+        foreach (Transform child in topParent.transform)
+        {
+            if (! PrefabUtility.IsAnyPrefabInstanceRoot(child.gameObject))
+                throw new System.Exception("Cannont have non-prefab at root of export object");
+
+            topLevelObjectPaths.Add(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(child.gameObject));
+            Debug.Log(topLevelObjectPaths[topLevelObjectPaths.Count-1]);
+        }
+
         var materialsForMeshes = new Dictionary<Mesh, int>();
 
         foreach (var mesh in meshes)
@@ -93,19 +103,38 @@ static class ModelDataFileSerializer
         foreach (var mesh in meshes)
             result.AddRange(serializeMesh(mesh, flatShadedMeshes.Contains(mesh), materialsForMeshes[mesh]));
 
+        var modelIndices = new Dictionary<string, int>();
+        int prefabIndex = 0;
+
         result.Add((byte)prefabPaths.Length);
 
         foreach (var path in prefabPaths)
+        {
+            if (topLevelObjectPaths.Contains(path))
+                modelIndices.Add(path.Substring(path.LastIndexOf("/") + 1).Replace(".prefab", ""), prefabIndex);
+
             result.AddRange(serializePrefab(meshes, prefabPaths, AssetDatabase.LoadAssetAtPath(path, typeof(GameObject)) as GameObject));
+            prefabIndex++;
+        }
 
         return new SerializedModelFile {
             data = result.ToArray(),
             materials = materials,
-            modelIndices = new Dictionary<string, int>()
+            modelIndices = modelIndices
         };
     }
 
-    public static GameObject Deserialize(SerializedModelFile modelFile, string objectName)
+    public static string CreateJSLookupForModelIndices(Dictionary<string, int> modelIndices)
+    {
+        var result = "";
+
+        foreach (var kvp in modelIndices)
+            result += "const MODEL_INDEX_" + kvp.Key + " = " + kvp.Value + ";\n";
+
+        return result;
+    }
+
+    public static GameObject Deserialize(SerializedModelFile modelFile, string objectName, IList<int> topLevelObjects)
     {
         int ptr = 0;
 
@@ -129,9 +158,13 @@ static class ModelDataFileSerializer
             prefabs.Add(newPrefab);
         }
 
-        for (var i = 0; i < numPrefabs; ++i)
+        var position = Vector3.zero;
+        foreach (var topLevelIndex in topLevelObjects)
         {
-            instantiatePrefab(meshes, prefabs, i, modelFile.materials).transform.parent = result.transform;
+            var newObj = instantiatePrefab(meshes, prefabs, topLevelIndex, modelFile.materials);
+            newObj.transform.parent = result.transform;
+            newObj.transform.localPosition = position;
+            position += Vector3.right * 2;
         }
 
         return result;
@@ -160,8 +193,33 @@ static class ModelDataFileSerializer
     static GameObject instantiateMeshObject(DeserializedMesh mesh, Material[] materials)
     {
         var result = new GameObject("MeshObject");
-        result.AddComponent<MeshFilter>().sharedMesh = mesh.mesh;
+        result.AddComponent<MeshFilter>().sharedMesh = mesh.flatShaded ? createFlatShadedMesh(mesh.mesh) : mesh.mesh;
         result.AddComponent<MeshRenderer>().sharedMaterial = materials[mesh.materialIndex];
+        return result;
+    }
+
+    static Mesh createFlatShadedMesh(Mesh source)
+    {
+        var verts = new List<Vector3>();
+        var tris = new List<int>();
+
+        for (var i = 0; i < source.triangles.Length - 2; i += 3)
+        {
+            verts.Add(source.vertices[source.triangles[i+0]]);
+            verts.Add(source.vertices[source.triangles[i+1]]);
+            verts.Add(source.vertices[source.triangles[i+2]]);
+
+            tris.Add(i+0);
+            tris.Add(i+1);
+            tris.Add(i+2);
+        }
+        
+        var result = new Mesh();
+        result.vertices = verts.ToArray();
+        result.triangles = tris.ToArray();
+        result.RecalculateBounds();
+        result.RecalculateNormals();
+        result.RecalculateTangents();
         return result;
     }
 
