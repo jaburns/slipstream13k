@@ -1,6 +1,8 @@
 {
     "G_TICK_MILLIS": 33,
-    "G_CUBE_MODEL_BLOB": 0,
+    "G_MODELS_BLOB": 0,
+    "G_CUBE_MODEL_BLOB": 1,
 
+    "G_MODEL_INDEX_Example": 0,
     "__EOF__": 0
 }

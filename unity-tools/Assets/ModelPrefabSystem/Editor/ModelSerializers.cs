@@ -124,16 +124,6 @@ static public class ModelDataFileSerializer
         };
     }
 
-    public static string CreateJSLookupForModelIndices(Dictionary<string, int> modelIndices)
-    {
-        var result = "";
-
-        foreach (var kvp in modelIndices)
-            result += "const MODEL_INDEX_" + kvp.Key + " = " + kvp.Value + ";\n";
-
-        return result;
-    }
-
     public static GameObject Deserialize(SerializedModelFile modelFile, string objectName, IList<int> topLevelObjects)
     {
         int ptr = 0;

@@ -4,13 +4,16 @@ gl.getExtension('OES_texture_half_float_linear');
 gl.getExtension('WEBGL_depth_texture');
 ext = gl.getExtension("OES_texture_half_float");
 
-
 //__include soundbox-player.inc.js
+//__include song.inc.js
+
 //__include shaders.gen.js
+
 //__include math.inc.js
 //__include gfx.inc.js
+//__include meshLoader.inc.js
+
 //__include state.inc.js
-//__include song.inc.js
 
 let socket = io()
   , lastReceiveState
@@ -215,7 +218,7 @@ let update = () => {
 
 update();
 
-cubeModel = gfx_loadBufferObjectsFromModelFile(blobs[G_CUBE_MODEL_BLOB]);
+cubeModel = meshLoader_loadBufferObjectsFromModelFile_legacy(blobs[G_CUBE_MODEL_BLOB]);
 
 let exampleSFX=__includeSongData({songData:[{i:[0,255,116,1,0,255,120,0,1,127,4,6,35,0,0,0,0,0,0,2,14,0,10,32,0,0,0,0],p:[1],c:[{n:[140],f:[]}]}],rowLen:5513,patternLen:32,endPattern:0,numChannels:1});
 sbPlay(exampleSFX, x => soundEffect = x);
