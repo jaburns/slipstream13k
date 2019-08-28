@@ -156,11 +156,10 @@ let gfx_createCubeMap = () =>{
 let gfx_createMotionCubeMap = () =>{
 
     let shader = gfx_compileProgram(fullQuad_vert,curlBox_frag);
-    let s = 1024;
+    let s = 256;
 
     
     let cube = [];
-    let FRAMES = 16;
     for(var f=0; f<FRAMES; f++){
         let framebuffer = gl.createFramebuffer();
         gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);

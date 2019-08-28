@@ -3,6 +3,7 @@ gl.getExtension('OES_texture_float_linear');
 gl.getExtension('OES_texture_half_float_linear');
 gl.getExtension('WEBGL_depth_texture');
 ext = gl.getExtension("OES_texture_half_float");
+FRAMES = 32
 
 //__include soundbox-player.inc.js
 //__include song.inc.js
@@ -182,16 +183,15 @@ let render = state => {
         let projection = mat4_multiply(projectionMatrix,viewMatrix);
         gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_vp'), false, mat4_invert(projection));
 
-        let FRAMES = 16;
-        let subFrames=12;
-        let f = ~~(frame/subFrames) % (FRAMES * 2 - 1);
+        let subFrames=8;
+        let f = ~~(frame/subFrames) % (FRAMES * 2-2);
         gl.activeTexture(gl.TEXTURE3);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, motionCubeTexture[Math.abs(f-(FRAMES-1))]);
         gl.uniform1i(gl.getUniformLocation(reprojectProg, "u_cube1"), 3);
 
         frame = (frame + 1);
 
-        f = ~~(frame / subFrames) % (FRAMES * 2 - 1);
+        f = ~~(frame / subFrames) % (FRAMES * 2-2);
         gl.activeTexture(gl.TEXTURE4);
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, motionCubeTexture[Math.abs(f-(FRAMES-1))]);
         gl.uniform1i(gl.getUniformLocation(reprojectProg, "u_cube2"), 4);

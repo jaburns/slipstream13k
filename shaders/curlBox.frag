@@ -147,7 +147,7 @@ void main()
 
     vec3 ray = dir/length(dir)*.4;
     gl_FragColor.rg=vec2(0,0);
-    for(int i=0; i<5;i++){
+    for(int i=0; i<7;i++){
       float f = pow(2.,float(i));
       gl_FragColor.rg+=curl2d(vec4(ray * f, _Slice * (f/10.)*t),dirX,dirY);
     }
