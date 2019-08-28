@@ -21,5 +21,5 @@ void main()
     vec2 offset = mix(textureCube(u_cube1, dir).rg,textureCube(u_cube2,dir).rg,u_interpolate);
     offset.y*=u_aspect;
 
-    gl_FragColor = vec4(mix(vec3(color.r),texture2D(u_old,uv_off+offset*0.00003).rgb,0.9),1);
+    gl_FragColor = vec4(mix(vec3(color.r),texture2D(u_old,uv_off+offset*0.0003).rgb,0.9),1);
 }
