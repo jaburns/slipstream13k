@@ -33,6 +33,11 @@ static public class ModelDataFileSerializer
         rotationWsign: bit
         itemIndex: 6bit
 
+        if (! isPrefab) {        // TODO
+            flatShaded: bit      // TODO
+            materialIndex: 7bit  // TODO
+        }                        // TODO
+
         pos: 3byte
         scale: 3byte
         rotation: 3byte
@@ -40,8 +45,8 @@ static public class ModelDataFileSerializer
 
     struct Mesh
     {
-        flatShaded: bit
-        materialIndex: 7bit
+        flatShaded: bit       // DEPRECATE
+        materialIndex: 7bit   // DEPRECATE
 
         scale: 3byte
         originX: 3byte
@@ -151,7 +156,7 @@ static public class ModelDataFileSerializer
         var position = Vector3.zero;
         foreach (var topLevelIndex in topLevelObjects)
         {
-            var newObj = instantiatePrefab(meshes, prefabs, topLevelIndex, modelFile.materials);
+            var newObj = instantiatePrefab(meshes, prefabs, topLevelIndex, modelFile.materials, 0);
             newObj.transform.parent = result.transform;
             newObj.transform.localPosition = position;
             position += Vector3.right * 2;
@@ -160,15 +165,17 @@ static public class ModelDataFileSerializer
         return result;
     }
 
-    static GameObject instantiatePrefab(IList<DeserializedMesh> meshes, IList<DeserializedChild[]> prefabs, int prefabIndex, Material[] materials)
+    static GameObject instantiatePrefab(IList<DeserializedMesh> meshes, IList<DeserializedChild[]> prefabs, int prefabIndex, Material[] materials, int depth)
     {
         var result = new GameObject("PrefabObject");
         var prefab = prefabs[prefabIndex];
 
+        if (depth > 10) return result;
+
         foreach (var child in prefab)
         {
             var childObject = child.isPrefab
-                ? instantiatePrefab(meshes, prefabs, child.itemIndex, materials)
+                ? instantiatePrefab(meshes, prefabs, child.itemIndex, materials, depth + 1)
                 : instantiateMeshObject(meshes[child.itemIndex], materials);
 
             childObject.transform.parent = result.transform;
@@ -274,10 +281,23 @@ static public class ModelDataFileSerializer
 
     static byte[] serializeChild(IList<Mesh> allMeshes, IList<string> prefabPaths, GameObject child)
     {
-        bool isPrefab = PrefabUtility.IsAnyPrefabInstanceRoot(child);
-        int itemIndex = isPrefab
-            ? prefabPaths.IndexOf(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(child))
-            : allMeshes.IndexOf(child.gameObject.GetComponent<MeshFilter>().sharedMesh);
+        bool isPrefab;
+        int itemIndex;
+
+        var recursivePrefabComponent = child.GetComponent<RecursivePrefab>();
+
+        if (recursivePrefabComponent != null)
+        {
+            isPrefab = true;
+            itemIndex = prefabPaths.IndexOf(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(recursivePrefabComponent.prefab));
+        }
+        else
+        {
+            isPrefab = PrefabUtility.IsAnyPrefabInstanceRoot(child);
+            itemIndex = isPrefab
+                ? prefabPaths.IndexOf(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(child))
+                : allMeshes.IndexOf(child.gameObject.GetComponent<MeshFilter>().sharedMesh);
+        }
 
         if (itemIndex >= 64)
         {
