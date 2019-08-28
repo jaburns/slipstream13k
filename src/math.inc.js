@@ -16,6 +16,13 @@ let vec3_normalize = a => {
     return a.map(x=>x/len);
 };
 
+let vec3_bufferMap = (buffer, fn) => {
+    let result = [];
+    for (let i = 0; i < buffer.length - 2; i += 3)
+        fn([buffer[i],buffer[i+1],buffer[i+2]]).forEach(x => result.push(x));
+    return result;
+};
+
 let quat_setAxisAngle = (axis, rad) => {
     rad *= .5;
     let s = Math.sin(rad);
@@ -33,6 +40,25 @@ let mat4_perspective = (aspect, near, far) => {
         0, 0, (2 * far * near) * nf, 0
     ];
 };
+
+// Transform a vec3 my a mat4. w is assumed 1 in the vec4 used internally.
+let mat4_mulPosition = (m, a) => {
+    let x = a[0], y = a[1], z = a[2];
+    let w = m[3] * x + m[7] * y + m[11] * z + m[15];
+    w = w || 1.0;
+    return [
+        (m[0] * x + m[4] * y + m[8] * z + m[12]) / w,
+        (m[1] * x + m[5] * y + m[9] * z + m[13]) / w,
+        (m[2] * x + m[6] * y + m[10] * z + m[14]) / w
+    ];
+};
+
+// Multiply a vec3 by the upper left mat3 of a mat4.
+let mat4_mulNormal = (m, a) => [
+    a[0]*m[0] + a[1]*m[4] + a[2]*m[8],
+    a[0]*m[1] + a[1]*m[5] + a[2]*m[9],
+    a[0]*m[2] + a[1]*m[6] + a[2]*m[10]
+];
 
 let mat4_multiply = (a, b) => [
     b[0]*a[0] + b[1]*a[4] + b[2]*a[8] + b[3]*a[12],
@@ -121,3 +147,5 @@ let mat4_fromRotationTranslationScale = (q, v, s) => {
 let Transform_create = () => ({ p: [0,0,0], r: [0,0,0,1], s: [1,1,1] });
 
 let Transform_toMatrix = self => mat4_fromRotationTranslationScale(self.r, self.p, self.s);
+
+let mat4_create = () => Transform_toMatrix(Transform_create());

@@ -176,7 +176,7 @@ let gfx_createMotionCubeMap = () =>{
         gfx_renderBuffer(shader,null,()=>{
 
             gl.uniformMatrix3fv(gl.getUniformLocation(shader, 'u_rot'), false,rotations[i]);
-            console.log(f/FRAMES);
+            //console.log(f/FRAMES);
             gl.uniform1f(gl.getUniformLocation(shader, 'u_slice'),f/FRAMES);
 
         });
