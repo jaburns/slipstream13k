@@ -3,6 +3,7 @@
  * https://github.com/toji/gl-matrix
  */
 
+let vec3_plus = (a, b) => a.map((x,i)=>x+b[i]);
 let vec3_minus = (a, b) => a.map((x,i)=>x-b[i]);
 
 let vec3_cross = (a, b) => [

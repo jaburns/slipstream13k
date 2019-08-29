@@ -40,11 +40,17 @@ public class GenerateModelFileEditor : Editor
         GUILayout.EndHorizontal();
 
         GUILayout.Space(5);
+
+        EditorGUI.BeginChangeCheck();
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("flatShadedMaterials"), true);
+        if(EditorGUI.EndChangeCheck()) serializedObject.ApplyModifiedProperties();
+
+        GUILayout.Space(5);
     }
 
     private void doExport()
     {
-        var file = ModelDataFileSerializer.Serialize(targ.gameObject);
+        var file = ModelDataFileSerializer.Serialize(targ.gameObject, targ.flatShadedMaterials);
         targ.latestSize = file.data.Length;
         var foundMaterials = file.materials;
 

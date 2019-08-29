@@ -35,18 +35,55 @@ let meshLoader_loadMeshesBlob = bytes => {
         };
     };
 
+    // TODO verify that this is correct
+
     let meshWithRegularNormals = (verts, tris) => {
+        let trisPerVert = verts.map(_ => []);
+        let norms = verts.map(_ => 0);
+
+        for (let i = 0; i < tris.length - 2; i += 3)
+        {
+            trisPerVert[tris[i  ]].push(i);
+            trisPerVert[tris[i+1]].push(i);
+            trisPerVert[tris[i+2]].push(i);
+        }
+
+        for (let i = 0; i < verts.length / 3; ++i)
+        {
+            let n = [0,0,0];
+
+            trisPerVert[i].forEach(triIndex => {
+                let x0 = verts[3*tris[triIndex+0]+0];
+                let y0 = verts[3*tris[triIndex+0]+1];
+                let z0 = verts[3*tris[triIndex+0]+2];
+
+                let x1 = verts[3*tris[triIndex+1]+0];
+                let y1 = verts[3*tris[triIndex+1]+1];
+                let z1 = verts[3*tris[triIndex+1]+2];
+
+                let x2 = verts[3*tris[triIndex+2]+0];
+                let y2 = verts[3*tris[triIndex+2]+1];
+                let z2 = verts[3*tris[triIndex+2]+2];
+
+                let cross = vec3_cross([x1-x0, y1-y0, z1-z0], [x2-x0, y2-y0, z2-z0]);
+                n = vec3_plus(n, cross);
+            });
+
+            n = vec3_normalize(n);
+
+            norms[3*i+0] = n[0];
+            norms[3*i+1] = n[1];
+            norms[3*i+2] = n[2];
+        }
+
         return {
             v: verts,
             t: tris,
-            n: verts // TODO calculate normals
+            n: norms
         }
     };
 
     let deserializeMesh = () => {
-        let flatShaded = bytes[ptr] & 128 !== 0;
-        let materialIndex = bytes[ptr++] % 128;  // TODO create buffer with material index for each vertex
-
         let scaleX = bytes[ptr++] / 256 * 8;
         let scaleY = bytes[ptr++] / 256 * 8;
         let scaleZ = bytes[ptr++] / 256 * 8;
@@ -67,9 +104,10 @@ let meshLoader_loadMeshesBlob = bytes => {
         let numTris = bytes[ptr++];
         let tris = [].slice.call(bytes.subarray(ptr, ptr += 3*numTris));
 
-        return flatShaded
-            ? meshWithFlatShadedNormals(verts, tris)
-            : meshWithRegularNormals(verts, tris);
+        return [
+            meshWithRegularNormals(verts, tris),
+            meshWithFlatShadedNormals(verts, tris)
+        ];
     };
 
     let unpackPrefabVec3 = () =>
@@ -81,19 +119,27 @@ let meshLoader_loadMeshesBlob = bytes => {
         return x;
     }
 
-    let _isPrefabAndItemIndexAndWSign, _wSign,
-    deserializeChild = () => (
-        _isPrefabAndItemIndexAndWSign = bytes[ptr++],
-        _wSign = (_isPrefabAndItemIndexAndWSign & 64) != 0 ? -1 : 1,
-        {
-            f: (_isPrefabAndItemIndexAndWSign & 128) != 0, // f: is prefab?
-            i: _isPrefabAndItemIndexAndWSign % 64,                // i: item index
+    let deserializeChild = () => {
+        let isPrefabAndItemIndexAndWSign = bytes[ptr++];
+        let wSign = (isPrefabAndItemIndexAndWSign & 64) != 0 ? -1 : 1;
+
+        let result = {
+            f: isPrefabAndItemIndexAndWSign & 128,  // f: is prefab?
+            i: isPrefabAndItemIndexAndWSign % 64,   // i: item index
 
             p: unpackPrefabVec3(),      // p: position
             s: unpackPrefabVec3(),      // s: scale
-            r: unpackPrefabQuat(_wSign) // r: rotation
+            r: unpackPrefabQuat(wSign)  // r: rotation
+        };
+
+        if (! result.f) {
+            let z = bytes[ptr++];
+            result.l = z & 128 ? 1 : 0; // l: flat shaded?
+            result.m = z % 128;         // m: material index
         }
-    );
+
+        return result;
+    };
 
     let deserializePrefab = () => {
         let childCount = bytes[ptr++];
@@ -122,23 +168,26 @@ let meshLoader_loadMeshesBlob = bytes => {
         let tris = [];
         let norms = [];
 
-        let innerPrefab = (prefab, matrix) => {
+        let innerPrefab = (prefab, matrix, depth) => {
             prefab.forEach(child => {
                 let newMatrix = mat4_multiply(matrix, Transform_toMatrix(child));
 
                 if (child.f) {
-                    innerPrefab(prefabs[child.i], newMatrix);
+                    if (depth < G_MAX_PREFAB_DEPTH)
+                        innerPrefab(prefabs[child.i], newMatrix, depth + 1);
                 } else {
-                    let mesh = meshes[child.i];
+                    let mesh = meshes[child.i][child.l];
                     let oldVcount = verts.length / 3;
 
                     verts = verts.concat(vec3_bufferMap(mesh.v, x => mat4_mulPosition(newMatrix, x)));
                     norms = norms.concat(vec3_bufferMap(mesh.n, x => mat4_mulNormal(newMatrix, x)));
                     tris = tris.concat(mesh.t.map(x => x + oldVcount));
+
+                    // TODO Write child.m (material index) to a buffer for each vertex
                 }
             });
         };
-        innerPrefab(prefab, mat4_create());
+        innerPrefab(prefab, mat4_create(), 0);
 
         let result = {t:tris.length};
 
