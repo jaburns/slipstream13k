@@ -32,5 +32,5 @@ void main()
     offset.y*=u_aspect;
 
     //gl_FragColor = vec4(offset,0,1);
-    gl_FragColor = vec4(mix(vec3(color.r),texture2D(u_old,uv_off+offset*0.0003*linearDepth(depth)).rgb,0.9),1);
+    gl_FragColor = vec4(mix(vec3(max(0.,color.r)),texture2D(u_old,uv_off+offset*0.0001*linearDepth(depth)).rgb,0.9),1);
 }

@@ -75,12 +75,16 @@ let gfx_createFrameBufferTexture = () => {
         f: framebuffer,
         t: texture,
         d: depthTexture,
+        w: 1,
+        h: 1,
         r(width, height) { // resize()
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, ext.HALF_FLOAT_OES, null);
 
             gl.bindTexture(gl.TEXTURE_2D, depthTexture); // TODO don't always do this
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, width, height, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
+            w=width;
+            h=height;
         }
     };
 
@@ -184,4 +188,90 @@ let gfx_createMotionCubeMap = () =>{
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
     }
     return cube;
+}
+
+let gfx_downSample = (tex,amt,width,height) =>{
+    let shader = gfx_compileProgram(fullQuad_vert,downSample_frag);
+    let oldTexture = tex;
+    widths = [];
+    heights = [];
+    for(i=0; i<amt; i++){
+        oldWidth = width;
+        oldHeight = height;
+        widths.push(width);
+        heights.push(height);
+        width=~~(width/2);
+        height=~~(height/2);
+        let framebuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER,framebuffer);
+        let texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, ext.HALF_FLOAT_OES, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+
+        let vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,-1,-1,1,-1,1,-1,1,1,-1,1]), gl.STATIC_DRAW);
+    
+        gl.useProgram(shader);
+    
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, oldTexture);
+        gl.uniform1i(gl.getUniformLocation(shader, "u_tex"), 0);
+    
+        gl.uniform2f(gl.getUniformLocation(shader, 'u_resolution'), oldWidth, oldHeight);
+    
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        let posLoc = gl.getAttribLocation(shader, "a_position");
+        gl.enableVertexAttribArray(posLoc);
+        gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+        gl.viewport(0,0,width,height);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        oldTexture = texture;
+    }
+
+    shader = gfx_compileProgram(fullQuad_vert,upSample_frag);
+
+    for(i=0; i<amt-2; i++){
+        width = widths.pop();
+        height = heights.pop();
+        oldWidth=~~(width/2);
+        oldHeight=~~(height/2);
+        let framebuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER,framebuffer);
+        let texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, ext.HALF_FLOAT_OES, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+
+        let vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,-1,-1,1,-1,1,-1,1,1,-1,1]), gl.STATIC_DRAW);
+    
+        gl.useProgram(shader);
+    
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, oldTexture);
+        gl.uniform1i(gl.getUniformLocation(shader, "u_tex"), 0);
+    
+        gl.uniform2f(gl.getUniformLocation(shader, 'u_resolution'), oldWidth, oldHeight);
+    
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        let posLoc = gl.getAttribLocation(shader, "a_position");
+        gl.enableVertexAttribArray(posLoc);
+        gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+        gl.viewport(0,0,width,height);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        oldTexture = texture;
+    }
+
+    return oldTexture;
 }

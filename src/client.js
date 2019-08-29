@@ -153,6 +153,7 @@ let drawScene = state => {
 };
 
 let render = state => {
+    gl.viewport(0,0,innerWidth,innerHeight);
     nextswap = (swap+1)%2;
     
     projectionMatrix = mat4_perspective(aspectRatio, .2, 100);
@@ -204,9 +205,15 @@ let render = state => {
         
     });
 
+    let downed = gfx_downSample(frameBuffers[nextswap].t,5,innerWidth,innerHeight);
+    gl.viewport(0,0,innerWidth,innerHeight);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-    gfx_renderBuffer(copyProg, frameBuffers[nextswap].t);
+    gfx_renderBuffer(copyProg, frameBuffers[nextswap].t,()=>{
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, downed);
+        gl.uniform1i(gl.getUniformLocation(copyProg, 'u_bloom'), 1);
+    });
     swap = nextswap
 };
 
