@@ -12,6 +12,8 @@ public class SerializedModelFile
 
 static public class ModelDataFileSerializer
 {
+    const int MAX_PREFAB_DEPTH = 10;
+
 /*  struct ModelDataFile
     {
         numMeshes: byte
@@ -36,13 +38,15 @@ static public class ModelDataFileSerializer
         pos: 3byte
         scale: 3byte
         rotation: 3byte
+
+        if (! isPrefab) {
+            flatShaded: bit
+            materialIndex: 7bit
+        }
     }
 
     struct Mesh
     {
-        flatShaded: bit
-        materialIndex: 7bit
-
         scale: 3byte
         originX: 3byte
 
@@ -53,7 +57,14 @@ static public class ModelDataFileSerializer
         tris: 3byte[numTris]
     }
 */
-    public static SerializedModelFile Serialize(GameObject topParent)
+
+    class MaterialInfo
+    {
+        public IList<Material> allMaterials;
+        public IList<Material> flatShadedMaterials;
+    }
+
+    public static SerializedModelFile Serialize(GameObject topParent, IList<Material> flatShadedMaterials)
     {
         var meshes = topParent.GetComponentsInChildren<MeshFilter>()
             .Select(x => x.sharedMesh)
@@ -63,11 +74,6 @@ static public class ModelDataFileSerializer
         var prefabPaths = topParent.GetComponentsInChildren<Transform>()
             .Where(x => PrefabUtility.IsAnyPrefabInstanceRoot(x.gameObject))
             .Select(x => PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(x))
-            .Distinct()
-            .ToArray();
-
-        var flatShadedMeshes = topParent.GetComponentsInChildren<FlatShadeThisMesh>()
-            .Select(x => x.GetComponent<MeshFilter>().sharedMesh)
             .Distinct()
             .ToArray();
 
@@ -83,37 +89,31 @@ static public class ModelDataFileSerializer
                 throw new System.Exception("Cannont have non-prefab at root of export object");
 
             topLevelObjectPaths.Add(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(child.gameObject));
-            Debug.Log(topLevelObjectPaths[topLevelObjectPaths.Count-1]);
         }
-
-        var materialsForMeshes = new Dictionary<Mesh, int>();
-
-        foreach (var mesh in meshes)
-            materialsForMeshes[mesh] = (materials as IList<Material>).IndexOf(
-                topParent.GetComponentsInChildren<MeshFilter>()
-                    .Where(x => x.sharedMesh == mesh)
-                    .First()
-                    .GetComponent<MeshRenderer>()
-                    .sharedMaterials[0]);
 
         var result = new List<byte>();
 
         result.Add((byte)meshes.Length);
 
         foreach (var mesh in meshes)
-            result.AddRange(serializeMesh(mesh, flatShadedMeshes.Contains(mesh), materialsForMeshes[mesh]));
+            result.AddRange(serializeMesh(mesh));
 
         var modelIndices = new Dictionary<string, int>();
         int prefabIndex = 0;
 
         result.Add((byte)prefabPaths.Length);
 
+        var materialInfo = new MaterialInfo {
+            allMaterials = materials,
+            flatShadedMaterials = flatShadedMaterials,
+        };
+
         foreach (var path in prefabPaths)
         {
             if (topLevelObjectPaths.Contains(path))
                 modelIndices.Add(path.Substring(path.LastIndexOf("/") + 1).Replace(".prefab", ""), prefabIndex);
 
-            result.AddRange(serializePrefab(meshes, prefabPaths, AssetDatabase.LoadAssetAtPath(path, typeof(GameObject)) as GameObject));
+            result.AddRange(serializePrefab(meshes, prefabPaths, materialInfo, AssetDatabase.LoadAssetAtPath(path, typeof(GameObject)) as GameObject));
             prefabIndex++;
         }
 
@@ -129,7 +129,7 @@ static public class ModelDataFileSerializer
         int ptr = 0;
 
         var numMeshes = modelFile.data[ptr++];
-        var meshes = new List<DeserializedMesh>();
+        var meshes = new List<Mesh>();
 
         for (var i = 0; i < numMeshes; ++i)
         {
@@ -151,7 +151,7 @@ static public class ModelDataFileSerializer
         var position = Vector3.zero;
         foreach (var topLevelIndex in topLevelObjects)
         {
-            var newObj = instantiatePrefab(meshes, prefabs, topLevelIndex, modelFile.materials);
+            var newObj = instantiatePrefab(meshes, prefabs, topLevelIndex, modelFile.materials, 0);
             newObj.transform.parent = result.transform;
             newObj.transform.localPosition = position;
             position += Vector3.right * 2;
@@ -160,16 +160,18 @@ static public class ModelDataFileSerializer
         return result;
     }
 
-    static GameObject instantiatePrefab(IList<DeserializedMesh> meshes, IList<DeserializedChild[]> prefabs, int prefabIndex, Material[] materials)
+    static GameObject instantiatePrefab(IList<Mesh> meshes, IList<DeserializedChild[]> prefabs, int prefabIndex, Material[] materials, int depth)
     {
         var result = new GameObject("PrefabObject");
         var prefab = prefabs[prefabIndex];
 
+        if (depth > MAX_PREFAB_DEPTH) return result;
+
         foreach (var child in prefab)
         {
             var childObject = child.isPrefab
-                ? instantiatePrefab(meshes, prefabs, child.itemIndex, materials)
-                : instantiateMeshObject(meshes[child.itemIndex], materials);
+                ? instantiatePrefab(meshes, prefabs, child.itemIndex, materials, depth + 1)
+                : instantiateMeshObject(meshes[child.itemIndex], materials, child.flatShaded, child.materialIndex);
 
             childObject.transform.parent = result.transform;
             childObject.transform.localPosition = child.position;
@@ -180,11 +182,11 @@ static public class ModelDataFileSerializer
         return result;
     }
 
-    static GameObject instantiateMeshObject(DeserializedMesh mesh, Material[] materials)
+    static GameObject instantiateMeshObject(Mesh mesh, Material[] materials, bool flatShaded, int materialIndex)
     {
         var result = new GameObject("MeshObject");
-        result.AddComponent<MeshFilter>().sharedMesh = mesh.flatShaded ? createFlatShadedMesh(mesh.mesh) : mesh.mesh;
-        result.AddComponent<MeshRenderer>().sharedMaterial = materials[mesh.materialIndex];
+        result.AddComponent<MeshFilter>().sharedMesh = flatShaded ? createFlatShadedMesh(mesh) : mesh;
+        result.AddComponent<MeshRenderer>().sharedMaterial = materials[materialIndex];
         return result;
     }
 
@@ -249,14 +251,14 @@ static public class ModelDataFileSerializer
         return new Quaternion(x, y, z, wSign * Mathf.Sqrt(1.0f - x*x - y*y - z*z));
     }
 
-    static byte[] serializePrefab(IList<Mesh> allMeshes, IList<string> prefabPaths, GameObject prefab)
+    static byte[] serializePrefab(IList<Mesh> allMeshes, IList<string> prefabPaths, MaterialInfo materialInfo, GameObject prefab)
     {
         var result = new List<byte>();
 
         result.Add((byte)prefab.transform.childCount);
 
         foreach (Transform child in prefab.transform)
-            result.AddRange(serializeChild(allMeshes, prefabPaths, child.gameObject));
+            result.AddRange(serializeChild(allMeshes, prefabPaths, materialInfo, child.gameObject));
 
         return result.ToArray();
     }
@@ -272,12 +274,25 @@ static public class ModelDataFileSerializer
         return result.ToArray();
     }
 
-    static byte[] serializeChild(IList<Mesh> allMeshes, IList<string> prefabPaths, GameObject child)
+    static byte[] serializeChild(IList<Mesh> allMeshes, IList<string> prefabPaths, MaterialInfo materialInfo, GameObject child)
     {
-        bool isPrefab = PrefabUtility.IsAnyPrefabInstanceRoot(child);
-        int itemIndex = isPrefab
-            ? prefabPaths.IndexOf(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(child))
-            : allMeshes.IndexOf(child.gameObject.GetComponent<MeshFilter>().sharedMesh);
+        bool isPrefab;
+        int itemIndex;
+
+        var recursivePrefabComponent = child.GetComponent<RecursivePrefab>();
+
+        if (recursivePrefabComponent != null)
+        {
+            isPrefab = true;
+            itemIndex = prefabPaths.IndexOf(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(recursivePrefabComponent.prefab));
+        }
+        else
+        {
+            isPrefab = PrefabUtility.IsAnyPrefabInstanceRoot(child);
+            itemIndex = isPrefab
+                ? prefabPaths.IndexOf(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(child))
+                : allMeshes.IndexOf(child.gameObject.GetComponent<MeshFilter>().sharedMesh);
+        }
 
         if (itemIndex >= 64)
         {
@@ -297,6 +312,14 @@ static public class ModelDataFileSerializer
         result.AddRange(packPrefabVec3(child.transform.localScale));
         result.AddRange(packPrefabQuat(child.transform.localRotation));
 
+        if (! isPrefab)
+        {
+            var material = child.gameObject.GetComponent<MeshRenderer>().sharedMaterial;
+            byte flatShadedAndMaterialIndex = (byte)materialInfo.allMaterials.IndexOf(material);
+            flatShadedAndMaterialIndex |= (byte)(materialInfo.flatShadedMaterials.IndexOf(material) >= 0 ? 0b10000000 : 0);
+            result.Add(flatShadedAndMaterialIndex);
+        }
+
         return result.ToArray();
     }
 
@@ -304,6 +327,9 @@ static public class ModelDataFileSerializer
     {
         public bool isPrefab;
         public int itemIndex;
+
+        public bool flatShaded;
+        public int materialIndex;
 
         public Vector3 position;
         public Vector3 scale;
@@ -313,16 +339,30 @@ static public class ModelDataFileSerializer
     static DeserializedChild deserializeChild(byte[] data, ref int ptr)
     {
         byte isPrefabAndItemIndexAndWSign = data[ptr++];
+        bool isPrefab = (isPrefabAndItemIndexAndWSign & 0b10000000) != 0;
+        float wSign   = (isPrefabAndItemIndexAndWSign & 0b01000000) != 0 ? -1.0f : 1.0f;
+        int itemIndex = isPrefabAndItemIndexAndWSign % 64;
 
-        float wSign = (isPrefabAndItemIndexAndWSign & 0b01000000) != 0 ? -1.0f : 1.0f;
+        bool flatShaded = false;
+        int materialIndex = 0;
 
         var position = unpackPrefabVec3(data, ref ptr);
         var scale = unpackPrefabVec3(data, ref ptr);
         var rotation = unpackPrefabQuat(wSign, data, ref ptr);
 
+        if (! isPrefab)
+        {
+            byte flatShadedAndMaterialIndex = data[ptr++];
+            flatShaded = (flatShadedAndMaterialIndex & 0b10000000) != 0;
+            materialIndex = flatShadedAndMaterialIndex % 128;
+        }
+
         return new DeserializedChild {
-            isPrefab = (isPrefabAndItemIndexAndWSign & 0b10000000) != 0,
-            itemIndex = isPrefabAndItemIndexAndWSign % 64,
+            isPrefab = isPrefab,
+            itemIndex = itemIndex,
+
+            flatShaded = flatShaded,
+            materialIndex = materialIndex,
 
             position = position,
             scale = scale,
@@ -358,7 +398,7 @@ static public class ModelDataFileSerializer
         return new Vector3(x, y, z) / 255.0f;
     }
 
-    static byte[] serializeMesh(Mesh mesh, bool flatShaded, int materialIndex)
+    static byte[] serializeMesh(Mesh mesh)
     {
         var result = new List<byte>();
 
@@ -368,20 +408,9 @@ static public class ModelDataFileSerializer
             return null;
         }
 
-        if (materialIndex > 127)
-        {
-            Debug.LogError("Material index cannot be higher than 127!");
-            return null;
-        }
-
-        byte flatShadedFlagAndMaterialIndex = (byte)(flatShaded ? 128 : 0);
-        flatShadedFlagAndMaterialIndex += (byte)materialIndex;
-
         var originBytes = packMeshVec3(mesh.bounds, Vector3.zero);
 
         result.AddRange(new byte[] {
-            flatShadedFlagAndMaterialIndex,
-
             packMeshScaleComponent(mesh.bounds.size.x),
             packMeshScaleComponent(mesh.bounds.size.y),
             packMeshScaleComponent(mesh.bounds.size.z),
@@ -400,26 +429,8 @@ static public class ModelDataFileSerializer
         return result.ToArray();
     }
 
-    class DeserializedMesh
+    static Mesh deserializeMesh(byte[] data, ref int ptr)
     {
-        public Mesh mesh;
-        public bool flatShaded;
-        public int materialIndex;
-    }
-
-    static DeserializedMesh deserializeMesh(byte[] data, ref int ptr)
-    {
-        var result = new DeserializedMesh {
-            mesh = new Mesh(),
-            flatShaded = false,
-            materialIndex = -1
-        };
-
-        byte flatShadedFlagAndMaterialIndex = data[ptr++];
-
-        result.flatShaded = flatShadedFlagAndMaterialIndex >= 128;
-        result.materialIndex = flatShadedFlagAndMaterialIndex % 128;
-
         var sx = unpackMeshScaleComponent(data[ptr++]);
         var sy = unpackMeshScaleComponent(data[ptr++]);
         var sz = unpackMeshScaleComponent(data[ptr++]);
@@ -439,11 +450,13 @@ static public class ModelDataFileSerializer
         for (int i = 0; i < numTriangles * 3; ++i)
             triangles.Add((int)data[ptr++]);
 
-        result.mesh.vertices = vertices.ToArray();
-        result.mesh.triangles = triangles.ToArray();
-        result.mesh.RecalculateBounds();
-        result.mesh.RecalculateNormals();
-        result.mesh.RecalculateTangents();
+        var result = new Mesh();
+
+        result.vertices = vertices.ToArray();
+        result.triangles = triangles.ToArray();
+        result.RecalculateBounds();
+        result.RecalculateNormals();
+        result.RecalculateTangents();
 
         return result;
     }
