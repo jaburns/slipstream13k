@@ -3,8 +3,9 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "pack": "node build --small",
-    "fast": "node build",
+    "pack": "node build",
+    "test": "node build --test",
+    "fast": "node build --test",
     "bash": "bash"
   },
   "devDependencies": {
