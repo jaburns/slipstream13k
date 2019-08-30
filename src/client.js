@@ -29,7 +29,6 @@ let socket = io()
   , reprojectProg = gfx_compileProgram(reproject_vert,reproject_frag)
   , copyProg = gfx_compileProgram(fullQuad_vert,copy_frag)
   , composePassProg = gfx_compileProgram(fullQuad_vert, composePass_frag)
-  , fxaaPassProg = gfx_compileProgram(fullQuad_vert, fxaaPass_frag)
   , frameBuffers = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()]
   , swap = 0
   , frame = 0

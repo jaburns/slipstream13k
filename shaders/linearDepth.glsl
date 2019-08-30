@@ -1,6 +1,6 @@
 
 // depthSample from depthTexture.r, for instance
-float linearDepth(float depthSample)
+float   linearDepth   (float depthSample)
 {
     float zNear = 0.2;
     float zFar = 100.0;

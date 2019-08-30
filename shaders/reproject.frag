@@ -10,7 +10,7 @@ uniform float u_aspect;
 varying vec3 v_pos;
 varying vec2 v_uv;
 
-//__include linearDepth.glsl
+#include "linearDepth.glsl"
 
 void main()
 {

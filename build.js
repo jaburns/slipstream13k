@@ -48,69 +48,65 @@ const convertSongDataFormat = code => {
     }
 };
 
-const extractGLSLFunctionName = proto =>
-    proto.substring(proto.indexOf(' ') + 1, proto.indexOf('('));
-
-const findExportedShaderIncludeFuncs = code => {
-    const lines = code.split('\n').map(x => x.trim());
-    const result = [];
-
-    while (lines.length > 0) {
-        const line = lines.shift();
-        if (line.indexOf('//__export') >= 0) {
-            result.push(extractGLSLFunctionName(lines.shift()));
-        }
-    }
-
-    return result;
-};
-const findShaderIncludes = code => code
-    .split('\n')
-    .map(x => x.trim())
-    .filter(x => x.startsWith('//__include'))
-    .map(x => x.substr(x.indexOf(' ') + 1).replace('.', '_'));
-
 const buildShaderIncludeFile = () => {
     let fileContents = '';
-    let includedFuncs = [];
-    let includeHeaderMappings = [];
 
-    shell.find('shaders')
-        .map(x => x)
-        .sort((a, b) => a.endsWith('glsl') ? -1 : b.endsWith('glsl') ? 1 : 0)
-        .forEach(x => {
-            if (!(x.endsWith('.frag') || x.endsWith('.vert') || x.endsWith('.glsl'))) return;
+    const allFilesInShaderFolder = shell.find('shaders').map(x => x);
+    const allIncludeFileNames = allFilesInShaderFolder.filter(x => x.endsWith('.glsl'));
+    const allShaderFileNames = allFilesInShaderFolder.filter(x => x.endsWith('.frag') || x.endsWith('.vert'));
 
-            const rawFile = fs.readFileSync(x, 'utf8');
-            const varFileName = x.substr(x.indexOf('/')+1).replace('.', '_');
-            const includes = findShaderIncludes(rawFile);
-
-            if (includes.length > 0)
-                includeHeaderMappings = includeHeaderMappings
-                    .concat({file: varFileName, incs: includes });
-
-            if (MINIFY) {
-                const incFuncs = findExportedShaderIncludeFuncs(rawFile);
-                const incFuncsArg = incFuncs.length > 0 ? `--no-renaming-list ${incFuncs}` : '';
-
-                includedFuncs = includedFuncs.concat(incFuncs);
-
-                shell.exec(`${SHADER_MIN_TOOL} --preserve-externals ${incFuncsArg} --format js ${x} -o tmp.js`); // , {silent: true});
-                fileContents += fs.readFileSync('tmp.js', 'utf8');
-            } else {
-                fileContents += `let ${varFileName} = \`${rawFile}\`;\n\n`;
+    let allIncludedFunctionNames = [];
+    allIncludeFileNames.forEach(fileName => {
+        fs.readFileSync(fileName, 'utf8').split('\n').forEach(line => {
+            if (line.match(/[A-Za-z_]+[A-Za-z_0-9]+[ \t]+[A-Za-z_]+[A-Za-z_0-9]+[ \t]*\(.+\)/) && line.indexOf('return') < 0) {
+                const funcName = line.substring(line.indexOf(' '), line.indexOf('(')).trim();
+                if (funcName.indexOf(' ') >= 0) {
+                    console.log('Top-level functions in .glsl include files should have no indentation');
+                    process.exit(1);
+                }
+                allIncludedFunctionNames.push(funcName);
             }
         });
+    });
+
+    allIncludedFunctionNames = _.uniq(allIncludedFunctionNames);
+
+    allIncludeFileNames.concat(allShaderFileNames).forEach(fileName => {
+        const contents = fs.readFileSync(fileName, 'utf8');
+        const varFileName = fileName.substr(fileName.indexOf('/')+1).replace('.', '_');
+
+        if (MINIFY) {
+            console.log(`    ${varFileName}`);
+            shell.exec(`${SHADER_MIN_TOOL} --preserve-externals --no-renaming-list ${allIncludedFunctionNames.join(' ')} --format js ${fileName} -o tmp.js`);
+            fileContents += fs.readFileSync('tmp.js', 'utf8');
+        } else {
+            fileContents += `let ${varFileName} = \`${contents}\`;\n\n`;
+        }
+    });
 
     shell.rm('-rf', 'tmp.js');
 
-    includedFuncs = _.uniq(includedFuncs);
-
     let lines = fileContents.split('\n');
 
-    _.zip(includedFuncs, shaderMinNames.splice(0, includedFuncs.length)).forEach(([from, to]) => {
+    _.zip(allIncludedFunctionNames, shaderMinNames.splice(0, allIncludedFunctionNames.length)).forEach(([from, to]) => {
         lines = lines.map(line => {
-            const trimLine = line.trim();
+            let trimLine = line.trim();
+
+            if (trimLine.indexOf('#include') >= 0) {
+                if (MINIFY) {
+                    trimLine = trimLine
+                        .substring(trimLine.indexOf('"')+1, trimLine.lastIndexOf('"'))
+                        .replace(/\\/g, '');
+                }
+
+                trimLine = trimLine
+                    .substring(trimLine.indexOf('"')+1, trimLine.lastIndexOf('"'))
+                    .replace(/\./, '_');
+
+                return MINIFY
+                    ? trimLine + ' +'
+                    : '${'+trimLine+'}';
+            }
 
             if (trimLine.startsWith('"'))
                 return line.replace(new RegExp(from, 'g'), to);
@@ -124,26 +120,8 @@ const buildShaderIncludeFile = () => {
 
     fileContents = lines.join('\n');
 
-    includeHeaderMappings.forEach(({file, incs}) => {
-        fileContents = fileContents.replace(`let ${file} =`, `let ${file} = ${incs.join('+')} +`);
-    });
-
     return fileContents;
 };
-
-
-
-const buildShaderIncludeFile_new = () => {
-    // TODO
-        // Replace"//__include" with "#pragma include"
-        // after minification:
-        // Replace "#pragma include x.glsl" in string with '"+x_glsl+"'
-        // Make note of all function names in glsl files
-        // Minify those
-};
-
-
-
 
 const createBinaryBlobsReplacement = () => {
     const blobArray = "['" + 
