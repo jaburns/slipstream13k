@@ -106,11 +106,7 @@ let meshLoader_loadMeshesBlob = bytes => {
 
         return [
             meshWithRegularNormals(verts, tris),
-            meshWithRegularNormals(verts, tris)
-//          meshWithFlatShadedNormals(verts, tris),
-//          meshWithFlatShadedNormals(verts, tris)
-            // meshWithRegularNormals(verts, tris),
-            // meshWithFlatShadedNormals(verts, tris)
+            meshWithFlatShadedNormals(verts, tris)
         ];
     };
 

@@ -144,7 +144,6 @@ let drawScene = state => {
         gl.uniformMatrix4fv(gl.getUniformLocation(cubeProg, 'u_mvp'), false, mvp);
         gl.uniformMatrix4fv(gl.getUniformLocation(cubeProg, 'u_mvp_old'), false, mvpOld);
 
-
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeModel.v);
         let posLoc = gl.getAttribLocation(cubeProg, 'a_position');
         gl.enableVertexAttribArray(posLoc);
