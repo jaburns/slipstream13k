@@ -13,7 +13,7 @@ let vec3_cross = (a, b) => [
 ];
 
 let vec3_normalize = a => {
-    let len = a[0]*a[0] + a[1]*a[1] + a[2]*a[2];
+    let len = Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
     return a.map(x=>x/len);
 };
 

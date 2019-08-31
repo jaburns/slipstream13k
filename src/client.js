@@ -2,8 +2,8 @@ gl.getExtension('OES_texture_float');
 gl.getExtension('OES_texture_float_linear');
 gl.getExtension('OES_texture_half_float_linear');
 gl.getExtension('WEBGL_depth_texture');
-ext = gl.getExtension("OES_texture_half_float");
-FRAMES = 32
+let ext = gl.getExtension("OES_texture_half_float");
+let FRAMES = 32;
 
 //__include soundbox-player.inc.js
 //__include song.inc.js
@@ -123,7 +123,7 @@ let drawScene = state => {
         transform.r = quat_setAxisAngle([.16,.81,.57], t);
         transform.p[0] = 4*player.x - 2;
         transform.p[1] = 4*player.y - 2;
-        transform.p[2] = -3;
+        transform.p[2] = -1;
 
 
         let modelMatrix = Transform_toMatrix(transform);
