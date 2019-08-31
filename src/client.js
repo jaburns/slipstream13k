@@ -30,6 +30,7 @@ let socket = io()
   , copyProg = gfx_compileProgram(fullQuad_vert,copy_frag)
   , composePassProg = gfx_compileProgram(fullQuad_vert, composePass_frag)
   , frameBuffers = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()]
+  , mipStack = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()]
   , swap = 0
   , frame = 0
   , cubeTexture = gfx_createCubeMap()
@@ -46,11 +47,19 @@ let socket = io()
         let w = innerWidth, h = innerHeight;
         C.width = w;
         C.height = h;
+        
         frameBuffers[0].r(w, h);
         frameBuffers[1].r(w, h);
         frameBuffers[2].r(w, h);
+
         gl.viewport(0, 0, w, h);
         aspectRatio = w / h;
+        for(i=0; i<mipStack.length; i++){
+            w = ~~(w/2);
+            h = ~~(h/2);
+            mipStack[i].r(w,h);
+        }
+        
     };
 
 C.style.left = C.style.top = 0;
@@ -168,11 +177,9 @@ let render = state => {
 
 
     gl.disable(gl.DEPTH_TEST);
-    gl.bindFramebuffer(gl.FRAMEBUFFER,frameBuffers[nextswap].f);
 
 
-
-    gfx_renderBuffer(reprojectProg, frameBuffers[2].t, () => {
+    gfx_renderBuffer(reprojectProg, frameBuffers[2],frameBuffers[nextswap], () => {
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, frameBuffers[swap].t);
         gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_old'), 1);
@@ -198,19 +205,13 @@ let render = state => {
 
         gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_interpolate"), (frame % subFrames)/subFrames);
         gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_aspect"), aspectRatio);
-
-
-
-        
     });
 
-    let downed = gfx_downSample(frameBuffers[nextswap].t,5,innerWidth,innerHeight);
-    gl.viewport(0,0,innerWidth,innerHeight);
+    let downed = gfx_downSample(frameBuffers[nextswap],5,innerWidth,innerHeight);
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-    gfx_renderBuffer(copyProg, frameBuffers[nextswap].t,()=>{
+    gfx_renderBuffer(copyProg, frameBuffers[nextswap],null,()=>{
         gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, downed);
+        gl.bindTexture(gl.TEXTURE_2D, downed.t);
         gl.uniform1i(gl.getUniformLocation(copyProg, 'u_bloom'), 1);
     });
     swap = nextswap
@@ -224,7 +225,7 @@ let update = () => {
 
 update();
 
-cubeModel = meshLoader_loadMeshesBlob(blobs[G_MODELS_BLOB])[G_MODEL_INDEX_Example];
+cubeModel = meshLoader_loadMeshesBlob(blobs[G_MODELS_BLOB])[G_MODEL_INDEX_Nuke];
 
 let exampleSFX=__includeSongData({songData:[{i:[0,255,116,1,0,255,120,0,1,127,4,6,35,0,0,0,0,0,0,2,14,0,10,32,0,0,0,0],p:[1],c:[{n:[140],f:[]}]}],rowLen:5513,patternLen:32,endPattern:0,numChannels:1});
 sbPlay(exampleSFX, x => soundEffect = x);
