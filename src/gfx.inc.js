@@ -15,7 +15,7 @@ let gfx_compileProgram = (vert, frag) => {
     gl.shaderSource(vertShader, vert);
     gl.compileShader(vertShader);
 
-    if (true) {
+    if (__DEBUG) {
         let vertLog = gl.getShaderInfoLog(vertShader);
         if (vertLog === null || vertLog.length > 0 && vertLog.indexOf('ERROR') >= 0)
             showHTMLShaderError('vertex', vertLog, vert);
@@ -25,7 +25,7 @@ let gfx_compileProgram = (vert, frag) => {
     gl.shaderSource(fragShader, 'precision highp float;'+frag);
     gl.compileShader(fragShader);
 
-    if (true) {
+    if (__DEBUG) {
         let fragLog = gl.getShaderInfoLog(fragShader);
         if (fragLog === null || fragLog.length > 0 && fragLog.indexOf('ERROR') >= 0)
             showHTMLShaderError('fragment', fragLog, frag);

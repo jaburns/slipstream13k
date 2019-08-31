@@ -71,13 +71,16 @@ const buildShaderIncludeFile = () => {
 
     allIncludedFunctionNames = _.uniq(allIncludedFunctionNames);
 
-    allIncludeFileNames.concat(allShaderFileNames).forEach(fileName => {
+    const allFiles = allIncludeFileNames.concat(allShaderFileNames);
+
+    allFiles.forEach((fileName, i) => {
         const contents = fs.readFileSync(fileName, 'utf8');
         const varFileName = fileName.substr(fileName.indexOf('/')+1).replace('.', '_');
+        const pad = x => x.toString().length < 2 ? ' '+x : x;
 
         if (MINIFY) {
-            console.log(`    ${varFileName}`);
-            shell.exec(`${SHADER_MIN_TOOL} --preserve-externals --no-renaming-list ${allIncludedFunctionNames.join(' ')} --format js ${fileName} -o tmp.js`);
+            console.log(`    (${pad(i+1)} / ${allFiles.length}) ${fileName.substr(fileName.lastIndexOf('/') + 1)}`);
+            shell.exec(`${SHADER_MIN_TOOL} --preserve-externals --no-renaming-list main,${allIncludedFunctionNames.join(',')} --format js ${fileName} -o tmp.js`);
             fileContents += fs.readFileSync('tmp.js', 'utf8');
         } else {
             fileContents += `let ${varFileName} = \`${contents}\`;\n\n`;
