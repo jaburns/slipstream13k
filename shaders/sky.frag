@@ -135,7 +135,8 @@ float turb(vec3 p,float gain, float lac,int iter){
 void main()
 {
     vec3 dir = u_rot*vec3(v_uv*2.-1.,1);
-    vec3 p = dir/length(dir)/10.;
+    dir = dir/length(dir);
+    vec3 p = dir/10.;
 
     float n = turb(vec3(
 							turb(p,0.6,4.,5),
@@ -143,6 +144,7 @@ void main()
               turb(p+vec3(0.4,0.4,0.4),0.6,4.,5)
 							)
 							,0.3,2.,8);
-
-		gl_FragColor = vec4(n*float(n>0.3),0.,0.,1.);
+    vec3 sun = vec3(0.,-0.4,-1);
+    sun = sun/length(sun);
+		gl_FragColor = vec4(n*float(n>0.3)+float(dot(dir,sun)>0.9)*1000.,0.,0.,1.);
 }
