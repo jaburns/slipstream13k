@@ -8,26 +8,13 @@ const webglDecls = require('./webglContext.json');
 const SHADER_MIN_TOOL = process.platform === 'win32' ? 'tools\\shader_minifier.exe' : 'mono tools/shader_minifier.exe';
 const ADVZIP_TOOL = process.platform === 'win32' ? '..\\tools\\advzip.exe' : '../tools/advzip.osx';
 
-const MINIFY = process.argv[2] === '--small';
+const MINIFY = process.argv[2] !== '--test';
+
+const CLIENT_JS_FILENAME = MINIFY || process.argv.length <= 3
+    ? 'client.js'
+    : process.argv[3] + '.test.js';
 
 let shaderMinNames = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(x => 'z' + x);
-
-const extractGLSLFunctionName = proto =>
-    proto.substring(proto.indexOf(' ') + 1, proto.indexOf('('));
-
-const findExportedShaderIncludeFuncs = code => {
-    const lines = code.split('\n').map(x => x.trim());
-    const result = [];
-
-    while (lines.length > 0) {
-        const line = lines.shift();
-        if (line.indexOf('//__export') >= 0) {
-            result.push(extractGLSLFunctionName(lines.shift()));
-        }
-    }
-
-    return result;
-};
 
 const convertSong = song => [
     song.songData.map(x => [
@@ -61,58 +48,68 @@ const convertSongDataFormat = code => {
     }
 };
 
-// TODO: Dont try to minify imported shader code name. 
-// __include should just behave as a basic concatentation, with the caveat that names in a .glsl include are not minified.
-// Later we can revisit included function minification
-
-
-const findShaderIncludes = code => code
-    .split('\n')
-    .map(x => x.trim())
-    .filter(x => x.startsWith('//__include'))
-    .map(x => x.substr(x.indexOf(' ') + 1).replace('.', '_'));
-
 const buildShaderIncludeFile = () => {
     let fileContents = '';
-    let includedFuncs = [];
-    let includeHeaderMappings = [];
 
-    shell.find('shaders')
-        .map(x => x)
-        .sort((a, b) => a.endsWith('glsl') ? -1 : b.endsWith('glsl') ? 1 : 0)
-        .forEach(x => {
-            if (!(x.endsWith('.frag') || x.endsWith('.vert') || x.endsWith('.glsl'))) return;
+    const allFilesInShaderFolder = shell.find('shaders').map(x => x);
+    const allIncludeFileNames = allFilesInShaderFolder.filter(x => x.endsWith('.glsl'));
+    const allShaderFileNames = allFilesInShaderFolder.filter(x => x.endsWith('.frag') || x.endsWith('.vert'));
 
-            const rawFile = fs.readFileSync(x, 'utf8');
-            const varFileName = x.substr(x.indexOf('/')+1).replace('.', '_');
-            const includes = findShaderIncludes(rawFile);
-
-            if (includes.length > 0)
-                includeHeaderMappings = includeHeaderMappings
-                    .concat({file: varFileName, incs: includes });
-
-            if (MINIFY) {
-                const incFuncs = findExportedShaderIncludeFuncs(rawFile);
-                const incFuncsArg = incFuncs.length > 0 ? `--no-renaming-list ${incFuncs}` : '';
-
-                includedFuncs = includedFuncs.concat(incFuncs);
-
-                shell.exec(`${SHADER_MIN_TOOL} --preserve-externals ${incFuncsArg} --format js ${x} -o tmp.js`); // , {silent: true});
-                fileContents += fs.readFileSync('tmp.js', 'utf8');
-            } else {
-                fileContents += `let ${varFileName} = \`${rawFile}\`;\n\n`;
+    let allIncludedFunctionNames = [];
+    allIncludeFileNames.forEach(fileName => {
+        fs.readFileSync(fileName, 'utf8').split('\n').forEach(line => {
+            if (line.match(/[A-Za-z_]+[A-Za-z_0-9]+[ \t]+[A-Za-z_]+[A-Za-z_0-9]+[ \t]*\(.+\)/) && line.indexOf('return') < 0) {
+                const funcName = line.substring(line.indexOf(' '), line.indexOf('(')).trim();
+                if (funcName.indexOf(' ') >= 0) {
+                    console.log('Top-level functions in .glsl include files should have no indentation');
+                    process.exit(1);
+                }
+                allIncludedFunctionNames.push(funcName);
             }
         });
+    });
+
+    allIncludedFunctionNames = _.uniq(allIncludedFunctionNames);
+
+    const allFiles = allIncludeFileNames.concat(allShaderFileNames);
+
+    allFiles.forEach((fileName, i) => {
+        const contents = fs.readFileSync(fileName, 'utf8');
+        const varFileName = fileName.substr(fileName.indexOf('/')+1).replace('.', '_');
+        const pad = x => x.toString().length < 2 ? ' '+x : x;
+
+        if (MINIFY) {
+            console.log(`    (${pad(i+1)} / ${allFiles.length}) ${fileName.substr(fileName.lastIndexOf('/') + 1)}`);
+            shell.exec(`${SHADER_MIN_TOOL} --preserve-externals --no-renaming-list main,${allIncludedFunctionNames.join(',')} --format js ${fileName} -o tmp.js`);
+            fileContents += fs.readFileSync('tmp.js', 'utf8');
+        } else {
+            fileContents += `let ${varFileName} = \`${contents}\`;\n\n`;
+        }
+    });
 
     shell.rm('-rf', 'tmp.js');
 
-    includedFuncs = _.uniq(includedFuncs);
-
     let lines = fileContents.split('\n');
 
-    _.zip(includedFuncs, shaderMinNames.splice(0, includedFuncs.length)).forEach(([from, to]) => {
+    _.zip(allIncludedFunctionNames, shaderMinNames.splice(0, allIncludedFunctionNames.length)).forEach(([from, to]) => {
         lines = lines.map(line => {
-            const trimLine = line.trim();
+            let trimLine = line.trim();
+
+            if (trimLine.indexOf('#include') >= 0) {
+                if (MINIFY) {
+                    trimLine = trimLine
+                        .substring(trimLine.indexOf('"')+1, trimLine.lastIndexOf('"'))
+                        .replace(/\\/g, '');
+                }
+
+                trimLine = trimLine
+                    .substring(trimLine.indexOf('"')+1, trimLine.lastIndexOf('"'))
+                    .replace(/\./, '_');
+
+                return MINIFY
+                    ? trimLine + ' +'
+                    : '${'+trimLine+'}';
+            }
 
             if (trimLine.startsWith('"'))
                 return line.replace(new RegExp(from, 'g'), to);
@@ -125,10 +122,6 @@ const buildShaderIncludeFile = () => {
     });
 
     fileContents = lines.join('\n');
-
-    includeHeaderMappings.forEach(({file, incs}) => {
-        fileContents = fileContents.replace(`let ${file} =`, `let ${file} = ${incs.join('+')} +`);
-    });
 
     return fileContents;
 };
@@ -145,10 +138,11 @@ const createBinaryBlobsReplacement = () => {
 
 const findShaderInternalReplacements = allShaderCode => {
     const externals = _.flatten([
-        _.uniq(allShaderCode.match(/v_[a-zA-Z0-9_]+/g)),
-        _.uniq(allShaderCode.match(/u_[a-zA-Z0-9_]+/g)),
-        _.uniq(allShaderCode.match(/a_[a-zA-Z0-9_]+/g))
-    ]);
+        _.uniq(allShaderCode.match(/ v_[a-zA-Z0-9_]+/g)),
+        _.uniq(allShaderCode.match(/ u_[a-zA-Z0-9_]+/g)),
+        _.uniq(allShaderCode.match(/ a_[a-zA-Z0-9_]+/g))
+    ])
+    .map(x => x.trim());
 
     if (externals.length > shaderMinNames.length) {
         console.log('Not enough names in shaderMinNames');
@@ -279,13 +273,13 @@ const processFile = (replacements, file, code) => {
                 code = `let ${k} = ${constants[k]};\n` + code;
             }
         }
-        if (file === 'client.js') {
+        if (file === CLIENT_JS_FILENAME) {
             code = 'let gl = C.getContext`webgl`;\n' + code;
         }
         return convertSongDataFormat(code);
     }
 
-    if (file === 'client.js') {
+    if (file === CLIENT_JS_FILENAME) {
         code = convertSongDataFormat(mangleGLCalls_firstPass(code));
     }
 
@@ -317,7 +311,7 @@ const processFile = (replacements, file, code) => {
         process.exit(1);
     }
 
-    if (file === 'client.js') {
+    if (file === CLIENT_JS_FILENAME) {
         return mangleGLCalls_secondPass(uglifyResult.code);
     }
 
@@ -342,7 +336,7 @@ const main = () => {
     const allShaderCode = buildShaderIncludeFile();
     fs.writeFileSync('./src/shaders.gen.js', allShaderCode);
 
-    const clientCode = replaceIncludeDirectivesWithInlinedFiles(fs.readFileSync('./src/client.js', 'utf8'));
+    const clientCode = replaceIncludeDirectivesWithInlinedFiles(fs.readFileSync('./src/'+CLIENT_JS_FILENAME, 'utf8'));
     const sharedCode = replaceIncludeDirectivesWithInlinedFiles(fs.readFileSync('./src/shared.js', 'utf8'));
     const serverCode = replaceIncludeDirectivesWithInlinedFiles(fs.readFileSync('./src/server.js', 'utf8'));
 
@@ -358,7 +352,7 @@ const main = () => {
 
     console.log('Packing javascript...');
 
-    const finalClientJS = processFile(replacements, 'client.js', clientCode);
+    const finalClientJS = processFile(replacements, CLIENT_JS_FILENAME, clientCode);
     const finalSharedJS = processFile(replacements, 'shared.js', sharedCode);
     const finalHTML = processHTML(fs.readFileSync(MINIFY ? 'src/index.html' : 'src/index.debug.html', 'utf8'), finalClientJS);
 
