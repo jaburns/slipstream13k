@@ -6,6 +6,8 @@
 let vec3_plus = (a, b) => a.map((x,i)=>x+b[i]);
 let vec3_minus = (a, b) => a.map((x,i)=>x-b[i]);
 
+let math_clamp01 = a => a<0?0:a>1?1:a;
+
 let vec3_cross = (a, b) => [
     a[1] * b[2] - a[2] * b[1],
     a[2] * b[0] - a[0] * b[2],

@@ -145,29 +145,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chunks:
   - start: {x: 3.4117649, y: 5.568628}
-    handleIn: {x: -2.8823528, y: -1.4313722}
-    handleOut: {x: 1.0000002, y: 0.49019623}
+    handleIn: {x: -2.9019608, y: -1.4509807}
+    handleOut: {x: 0.9803922, y: 0.4705882}
   - start: {x: 1.4117647, y: 7.019608}
-    handleIn: {x: 4.8431377, y: 1.313726}
-    handleOut: {x: -1.0784314, y: -0.41176462}
+    handleIn: {x: 4.8235297, y: 1.2549014}
+    handleOut: {x: -1.137255, y: -0.43137264}
   - start: {x: 4.8627453, y: 9.294118}
-    handleIn: {x: -4.098039, y: 0.058823586}
-    handleOut: {x: 1.1176472, y: -0.09803867}
+    handleIn: {x: -4.117647, y: 0}
+    handleOut: {x: 1.0980392, y: -0.11764717}
   - start: {x: 8.235294, y: 8.588236}
-    handleIn: {x: 1.1568632, y: 0.9215689}
-    handleOut: {x: -1.0392156, y: -0.8823528}
-  - start: {x: 9.09804, y: 7.019608}
-    handleIn: {x: -4.4117646, y: -0.56862736}
-    handleOut: {x: 1.3529415, y: 0.13725519}
+    handleIn: {x: 1.1372547, y: 0.9019604}
+    handleOut: {x: -1.0588236, y: -0.9019613}
+  - start: {x: 8.196078, y: 6.117647}
+    handleIn: {x: -2.941176, y: 2.2745094}
+    handleOut: {x: 1.2549019, y: -0.9411764}
   - start: {x: 8.235294, y: 2.0392158}
-    handleIn: {x: -2.5686274, y: 3.54902}
-    handleOut: {x: 0.8039217, y: -1.1568627}
+    handleIn: {x: -2.5882354, y: 3.529412}
+    handleOut: {x: 0.7450981, y: -1.2156863}
   - start: {x: 3.4117649, y: 2.784314}
-    handleIn: {x: -1.352941, y: 2.4117653}
-    handleOut: {x: 0.60784364, y: -1.2745097}
+    handleIn: {x: -1.372549, y: 2.3921568}
+    handleOut: {x: 0.58823514, y: -1.2941178}
   - start: {x: 1.8039216, y: 1.0980393}
-    handleIn: {x: 4.921569, y: 0.9607843}
-    handleOut: {x: -1.3921568, y: -0.29411745}
+    handleIn: {x: 4.901961, y: 0.94117653}
+    handleOut: {x: -1.4509804, y: -0.31372553}
   mapResolution: 128
 --- !u!23 &1988004223
 MeshRenderer:

@@ -24,7 +24,7 @@ public class HeightMapNodes : MonoBehaviour
     public List<Chunk> chunks = new List<Chunk>();
     public int mapResolution = 256;
 
-    byte[] serializeStart(Vector2 v)
+    byte[] serializeVec2(Vector2 v)
     {
         return new byte[] { 
             (byte)(255 * v.x / 10),
@@ -32,49 +32,45 @@ public class HeightMapNodes : MonoBehaviour
         };
     }
 
-    byte[] serializeHandle(Vector2 v)
-    {
-        return new byte[] { 
-            (byte)(255 * (v.x + 5) / 10),
-            (byte)(255 * (v.y + 5) / 10)
-        };
-    }
-
     public byte[] Serialize()
     {
         var bytes = new List<byte>();
 
-        foreach (var chunk in chunks)
+        for (int i = 0; i < chunks.Count; ++i)
         {
-            bytes.AddRange(serializeStart(chunk.start));
-            bytes.AddRange(serializeHandle(chunk.handleIn));
-            bytes.AddRange(serializeHandle(chunk.handleOut));
+            var j = (i + 1) % chunks.Count;
+
+            bytes.AddRange(serializeVec2(chunks[i].start));
+            bytes.AddRange(serializeVec2(chunks[i].handleOut + chunks[i].start));
+            bytes.AddRange(serializeVec2(chunks[j].handleIn + chunks[j].start));
         }
 
         return bytes.ToArray();
     }
 
-    Vector2 deserializeStart(byte[] data, int ptr)
+    Vector2 deserializeVec2(byte[] data, int ptr)
     {
         return new Vector2(data[ptr], data[ptr+1]) / 255.0f * 10.0f;
-    }
-
-    Vector2 deserializeHandle(byte[] data, int ptr)
-    {
-        return new Vector2(data[ptr], data[ptr+1]) / 255.0f * 10.0f - 5.0f * Vector2.one;
     }
 
     public void Deserialize(byte[] bytes)
     {
         chunks = new List<Chunk>();
 
-        for (int i = 0; i < bytes.Length; i += 6)
+        for (int i = 0; i < bytes.Length / 6; ++i)
+            chunks.Add(new Chunk());
+
+        for (int i = 0; i < chunks.Count; ++i)
         {
-            chunks.Add(new Chunk {
-                start = deserializeStart(bytes, i),
-                handleIn = deserializeHandle(bytes, i+2),
-                handleOut = deserializeHandle(bytes, i+4)
-            });
+            chunks[i].start = deserializeVec2(bytes, 6*i);
+            chunks[i].handleOut = deserializeVec2(bytes, 6*i + 2);
+            chunks[(i + 1) % chunks.Count].handleIn = deserializeVec2(bytes, 6*i + 4);
+        }
+
+        foreach (var chunk in chunks)
+        {
+            chunk.handleIn -= chunk.start;
+            chunk.handleOut -= chunk.start;
         }
     }
 }
