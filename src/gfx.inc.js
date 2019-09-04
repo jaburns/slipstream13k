@@ -198,6 +198,8 @@ let gfx_createMotionCubeMap = () =>{
         gl.viewport(0,0,s,s);
 
         gl.uniformMatrix3fv(gl.getUniformLocation(shader, 'u_rot'), false,rotations[i]);
+        gl.uniform1f(gl.getUniformLocation(shader, 'u_slice'),f/FRAMES);
+
 
         let vertexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
