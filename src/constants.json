@@ -1,7 +1,10 @@
 {
     "G_TICK_MILLIS": 33,
+
     "G_MAX_PREFAB_DEPTH": 10,
+
     "G_MODELS_BLOB": 0,
+    "G_MAP_BLOB": 1,
 
     "G_MODEL_INDEX_Nuke": 0,
     "__EOF__": 0
