@@ -22,7 +22,7 @@ let gfx_compileProgram = (vert, frag) => {
     }
 
     let fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-    gl.shaderSource(fragShader, 'precision highp float;'+frag);
+    gl.shaderSource(fragShader, '#extension GL_OES_standard_derivatives : enable\nprecision highp float;'+frag);
     gl.compileShader(fragShader);
 
     if (__DEBUG) {
@@ -48,10 +48,10 @@ let gfx_renderBuffer; {
         gl.useProgram(shader);
 
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, src.t);
+        gl.bindTexture(gl.TEXTURE_2D, src.t||src);
         gl.uniform1i(gl.getUniformLocation(shader, "u_tex"), 0);
 
-        gl.uniform2f(gl.getUniformLocation(shader, 'u_resolution'), src.w, src.h);
+        gl.uniform2f(gl.getUniformLocation(shader, 'u_resolution'), src.w||dst.w, src.h||dst.h);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
         let posLoc = gl.getAttribLocation(shader, "a_position");
@@ -85,7 +85,7 @@ let gfx_createFrameBufferTexture = () => {
         h: 1,
         r(width, height) { // resize()
             gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, ext.HALF_FLOAT_OES, null);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.FLOAT, null);
 
             gl.bindTexture(gl.TEXTURE_2D, depthTexture); // TODO don't always do this
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, width, height, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
@@ -217,18 +217,18 @@ let gfx_createMotionCubeMap = () =>{
     }
     return cube;
 }
-
+let downProg = gfx_compileProgram(fullQuad_vert,downSample_frag)
+    , upProg = gfx_compileProgram(fullQuad_vert,upSample_frag);
 let gfx_downSample = (buf,amt,width,height) =>{
-    let shader = gfx_compileProgram(fullQuad_vert,downSample_frag);
+    let shader = downProg;
     let oldBuf=buf;
-    let oldWidth, oldHeight;
     for(i=0; i<amt; i++){
         buf = mipStack[i];
         gfx_renderBuffer(shader,oldBuf,buf);
         oldBuf=buf;
     }
 
-    shader = gfx_compileProgram(fullQuad_vert,upSample_frag);
+    shader = upProg;
 
     for(i=amt-2; i>1; i--){
         buf = mipStack[i];

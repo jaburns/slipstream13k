@@ -1,6 +1,7 @@
 gl.getExtension('OES_texture_float');
 gl.getExtension('OES_texture_float_linear');
 gl.getExtension('OES_texture_half_float_linear');
+gl.getExtension('OES_standard_derivatives');
 gl.getExtension('WEBGL_depth_texture');
 let ext = gl.getExtension("OES_texture_half_float");
 let FRAMES = 32;
@@ -22,6 +23,7 @@ let socket = io()
   , lastState
   , currentState
   , skyboxProg = gfx_compileProgram(skybox_vert, skybox_frag)
+  , linProg = gfx_compileProgram(fullQuad_vert,linearize_frag)
   , cubeProg = gfx_compileProgram(cube_vert, cube_frag)
   , blurPassProg = gfx_compileProgram(fullQuad_vert, blurPass_frag)
   , pickBloomPassProg = gfx_compileProgram(fullQuad_vert, pickBloomPass_frag)
@@ -29,7 +31,9 @@ let socket = io()
   , reprojectProg = gfx_compileProgram(reproject_vert,reproject_frag)
   , copyProg = gfx_compileProgram(fullQuad_vert,copy_frag)
   , composePassProg = gfx_compileProgram(fullQuad_vert, composePass_frag)
+  , downDepthProg = gfx_compileProgram(fullQuad_vert, downDepth_frag)
   , frameBuffers = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()]
+  , depthStack = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()]
   , mipStack = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()]
   , swap = 0
   , frame = 0
@@ -43,6 +47,9 @@ let socket = io()
   , lastViewMatrix
   , transform = Transform_create()
   , oldTransforms = []
+  , camPos = [0,0,0]
+  , near = 0.2
+  , far = 100
   , resizeFunc = () => {
         let w = innerWidth, h = innerHeight;
         C.width = w;
@@ -55,6 +62,7 @@ let socket = io()
         gl.viewport(0, 0, w, h);
         aspectRatio = w / h;
         for(i=0; i<mipStack.length; i++){
+            depthStack[i].r(w,h);
             w = ~~(w/2);
             h = ~~(h/2);
             mipStack[i].r(w,h);
@@ -67,8 +75,8 @@ onresize = resizeFunc;
 resizeFunc();
 
 socket.on("connect", () => {
-    onkeydown = k => socket.emit('d', k.keyCode);
-    onkeyup = k => socket.emit('u', k.keyCode);
+    onkeydown = k => {socket.emit('d', k.keyCode); console.log(k.keyCode); if(k.keyCode==188)camPos[2]+=0.1; if(k.keyCode==79)camPos[2]-=0.1;};
+    onkeyup = k => {socket.emit('u', k.keyCode);};
 
     socket.on('s', s => {
         lastState = currentState;
@@ -121,8 +129,8 @@ let drawScene = state => {
     state.forEach((player, i) => {
         let t = Date.now() / 10000 + i*1.7;
         transform.r = quat_setAxisAngle([.16,.81,.57], t);
-        transform.p[0] = 4*player.x - 2;
-        transform.p[1] = 4*player.y - 2;
+        transform.p[0] = player.x;
+        transform.p[1] = player.y;
         transform.p[2] = -1;
 
 
@@ -163,8 +171,8 @@ let render = state => {
     gl.viewport(0,0,innerWidth,innerHeight);
     nextswap = (swap+1)%2;
     
-    projectionMatrix = mat4_perspective(aspectRatio, .2, 100);
-    viewMatrix = mat4_fromRotationTranslationScale(quat_setAxisAngle([0,1,0],Math.cos(Date.now()/1000)*0.1),[0,0,0],[1,1,1])
+    projectionMatrix = mat4_perspective(aspectRatio, near, far);
+    viewMatrix = mat4_fromRotationTranslationScale(quat_setAxisAngle([0,1,0],Math.cos(Date.now()/1000)*0.1),camPos,[1,1,1])
 
     if(lastViewMatrix==null) lastViewMatrix=viewMatrix;
 
@@ -177,17 +185,49 @@ let render = state => {
 
     gl.disable(gl.DEPTH_TEST);
 
+    gfx_renderBuffer(linProg, frameBuffers[2].d,depthStack[0],()=>{
+        gl.uniform3f(gl.getUniformLocation(linProg, 'u_clip'), near*far, near-far, far);
+    });
+
+    for(i=1; i<depthStack.length; i++){
+        gfx_renderBuffer(downDepthProg,depthStack[i-1],depthStack[i]);
+    }
 
     gfx_renderBuffer(reprojectProg, frameBuffers[2],frameBuffers[nextswap], () => {
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, frameBuffers[swap].t);
         gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_old'), 1);
 
+        gl.uniform3f(gl.getUniformLocation(reprojectProg, 'u_clip'), near*far, near-far, far);
+        let inverter = [-2.0/(projectionMatrix[0]),
+        -2.0/(projectionMatrix[5]),
+        (1.0- projectionMatrix[8]) / projectionMatrix[0],
+        (1.0+ projectionMatrix[9]) / projectionMatrix[5]];
+        //console.log(inverter);
+        let ip = mat4_invert(projectionMatrix);
+        for(i=0; i<4;i++){
+            s="";
+            for(j=0; j<4;j++){
+                s+=ip[j*4+i]+", ";
+            }
+            //console.log(s);
+        }
+
+        gl.uniform4f(gl.getUniformLocation(reprojectProg, 'u_proj'), inverter[0],inverter[1],inverter[2],inverter[3]);
+
         gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, frameBuffers[2].d);
+        gl.bindTexture(gl.TEXTURE_2D, depthStack[0].t);
         gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth'), 2);
+
+        gl.activeTexture(gl.TEXTURE5);
+        gl.bindTexture(gl.TEXTURE_2D, depthStack[3].t);
+        gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth_1'), 5);
+        
+
         let projection = mat4_multiply(projectionMatrix,viewMatrix);
         gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_vp'), false, mat4_invert(projection));
+
+        gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_p'), false, mat4_invert(projectionMatrix));
 
         let subFrames=8;
         let f = ~~(frame/subFrames) % (FRAMES * 2-2);
