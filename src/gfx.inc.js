@@ -59,7 +59,7 @@ let gfx_renderBuffer; {
         gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 
         preDraw && preDraw();
-        if(dst!=null){
+        if(dst){
             gl.bindFramebuffer(gl.FRAMEBUFFER,dst.f);
             gl.viewport(0,0,dst.w,dst.h);
         }else{

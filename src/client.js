@@ -14,6 +14,7 @@ let FRAMES = 32;
 //__include math.inc.js
 //__include gfx.inc.js
 //__include meshLoader.inc.js
+//__include terrainGen.inc.js
 
 //__include state.inc.js
 
@@ -29,6 +30,7 @@ let socket = io()
   , pickBloomPassProg = gfx_compileProgram(fullQuad_vert, pickBloomPass_frag)
   , depthPass = gfx_compileProgram(fullQuad_vert,renderDepth_frag)
   , reprojectProg = gfx_compileProgram(reproject_vert,reproject_frag)
+  , terrainProg = gfx_compileProgram(terrain_vert,terrain_frag)
   , copyProg = gfx_compileProgram(fullQuad_vert,copy_frag)
   , composePassProg = gfx_compileProgram(fullQuad_vert, composePass_frag)
   , downDepthProg = gfx_compileProgram(fullQuad_vert, downDepth_frag)
@@ -86,7 +88,10 @@ socket.on("connect", () => {
     });
 });
 
+let terrainStuff = terrainGen_getRenderer(blobs[G_MAP_BLOB]);
+
 gl.clearColor(0, 0, 0, 1);
+gl.disable(gl.CULL_FACE);
 
 let drawScene = state => {
     gl.enable(gl.DEPTH_TEST);
@@ -124,8 +129,37 @@ let drawScene = state => {
     };
     gl.depthMask(true);
 
-    gl.useProgram(cubeProg);
 
+
+    gl.useProgram(terrainProg);
+
+    terrainStuff.meshes.forEach((m,i) => {
+        let modelMatrix = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
+        
+        let mvp = mat4_multiply(mat4_multiply(projectionMatrix,viewMatrix),modelMatrix);
+
+        gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_model'), false, modelMatrix);
+        gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_view'), false, viewMatrix);
+        gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_proj'), false, projectionMatrix);
+        gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_mvp'), false, mvp);
+        gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_mvp_old'), false, mvp);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, terrainStuff.heightMapTexture);
+        gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_heightMap'), 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, m.v);
+        let posLoc = gl.getAttribLocation(terrainProg, 'a_position');
+        gl.enableVertexAttribArray(posLoc);
+        gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.i);
+        gl.drawElements(gl.TRIANGLES, m.t, gl.UNSIGNED_SHORT, 0);
+    });
+
+
+
+    gl.useProgram(cubeProg);
 
     state.forEach((player, i) => {
         let t = Date.now() / 10000 + i*1.7;
@@ -140,7 +174,6 @@ let drawScene = state => {
         if(typeof oldTransforms[i] =='undefined'){
             oldTransforms[i]=modelMatrix;
         }
-
         
         let mvpOld = mat4_multiply(mat4_multiply(projectionMatrix,lastViewMatrix),oldTransforms[i]);
         let mvp = mat4_multiply(mat4_multiply(projectionMatrix,viewMatrix),modelMatrix);
