@@ -15,7 +15,7 @@ void main()
         float brightness = clamp(0., 1., dot(lightVec, v_normal));
         float distanceDecay = clamp(1.1 - .05*dot(v_position, v_position), 0., 1.);
   
-        color *= .1 + .7*brightness*distanceDecay;
+        color *= .3*brightness*distanceDecay;
     }
 
 

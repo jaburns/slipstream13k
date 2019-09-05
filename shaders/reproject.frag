@@ -40,8 +40,8 @@ float sampleAO(vec3 C, vec3 n_C, vec2 pos, sampler2D tex){
 
 	float vv = dot(v, v);
 	float vn = dot(v, n_C);
-    float radius2 = 1.;
-    float bias = 0.01;
+    float radius2 = 0.8;
+    float bias = 0.001;
     float epsilon = 0.01;
     float f = max(radius2 - vv, 0.0);
     return f * f * f * max((vn - bias) / (epsilon + vv), 0.0);
@@ -59,14 +59,14 @@ void main()
     vec3 norm = normalize(cross(dFdx(camPos),dFdy(camPos)));
 
     float sum = 0.;
-    for(int i=0; i<3; i++){
+    for(int i=0; i<2; i++){
         sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+1.)/u_resolution,u_depth);
         sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+2.)/u_resolution*2.,u_depth1);
         sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+3.)/u_resolution*4.,u_depth2);
         sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+4.)/u_resolution*8.,u_depth3);
         sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+5.)/u_resolution*16.,u_depth4);
     }
-    sum = sum/15.;
+    sum = sum/10.;
 
     vec2 uv_off = v_uv+objectMotion;
     vec3 dir = v_pos/length(v_pos);
@@ -74,14 +74,14 @@ void main()
     offset.y*=u_aspect;
 
     //gl_FragColor = vec4(offset,0,1);
-    float i = color.r;
+    float i=color.r+mix(1.-sum,0.,-camPos.z*0.01);
     color.r = min(max(color.r,0.),1.);
 
     vec3 col = mix(mix(vec3(0,0,0.2),vec3(0.5,0,0.2),min(color.r*2.,1.)),vec3(1,0.9,0.7),max(0.,color.r-0.5)*2.);
     col = col*i;
-    col = col*(1.-sum);
+    col = (norm*0.5+0.5)*(1.-sum);
     //gl_FragColor = vec4(vec3(float(camPos.z<-50.)),1);
     //gl_FragColor = vec4(norm*0.5+0.5,1);
     //gl_FragColor = vec4(vec3(sum),1);
-    gl_FragColor = vec4(mix(col,texture2D(u_old,uv_off+offset*0.00001*camPos.z).rgb,0.9),1);
+    gl_FragColor = vec4(mix(col,texture2D(u_old,uv_off+offset*0.00001*camPos.z).rgb,0.95),1);
 }
