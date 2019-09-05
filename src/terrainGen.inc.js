@@ -62,6 +62,7 @@ let _terrainGen_renderHeightMap = (trackCanvas, uniforms) => {
     let shader = gfx_compileProgram(fullQuad_vert, terrainMap_frag);
 
     gfx_renderBuffer(shader, {t:heightMapTex}, framebuffer, () => {
+        // TODO inline uniforms in shader
         for (let k in uniforms) {
             if (typeof uniforms[k] === 'number') {
                 gl.uniform1f(gl.getUniformLocation(shader, k), uniforms[k]);
@@ -96,4 +97,69 @@ let terrainGen_loadTrackCanvasFromBlob = bytes => {
     _terrainGen_signedDistanceFill(ctx);
 
     return canvas;
+}
+
+let chunksPerMapSide = 2;
+let verticesPerChunkSide = 128;
+let worldSpaceMapSize = 50;
+
+let _terrainGen_getChunkMesh = (chunkX, chunkZ) => {
+    let chunkUV = [chunkX / chunksPerMapSide, chunkZ / chunksPerMapSide];
+
+    let verts = [];
+    let tris = [];
+
+    for (let vx = 0; vx < verticesPerChunkSide; vx++) 
+    for (let vz = 0; vz < verticesPerChunkSide; vz++) {
+        let uv = [
+            chunkUV[0] + vx / (verticesPerChunkSide - 1) / chunksPerMapSide,
+            chunkUV[1] + vz / (verticesPerChunkSide - 1) / chunksPerMapSide,
+        ];
+
+        verts.push(uv[0] * worldSpaceMapSize - worldSpaceMapSize / 2);
+        verts.push(-5);
+        verts.push(uv[1] * worldSpaceMapSize - worldSpaceMapSize / 2);
+    }
+
+    for (var x = 0; x < verticesPerChunkSide - 1; x++)
+    for (var y = 0; y < verticesPerChunkSide - 1; y++) {
+        tris.push(x + y*verticesPerChunkSide);
+        tris.push((x+1) + y*verticesPerChunkSide);
+        tris.push(x + (y+1)*verticesPerChunkSide);
+
+        tris.push(x + (y+1)*verticesPerChunkSide);
+        tris.push((x+1) + y*verticesPerChunkSide);
+        tris.push((x+1) + (y+1)*verticesPerChunkSide);
+    }
+
+    let result = {t:tris.length};
+
+    result.v = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, result.v);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+
+    result.i = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, result.i);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(tris), gl.STATIC_DRAW);
+
+    return result;
+};
+
+
+let terrainGen_getRenderer = bytes => {
+    let trackCanvas = terrainGen_loadTrackCanvasFromBlob(bytes);
+    let heightMapFB = _terrainGen_renderHeightMap(trackCanvas, 
+        {"u_preScalePower":1.1,"u_curveScale":3.5,"u_curveOffset":0.1,"u_postScalePower":1.2,"u_noise0":[0.1,25,0],"u_noise1":[0.05,20,0.4],"u_noise2":[0.3,5,1],"u_noise3":[0.5,2,1.2],"u_finalScale":1.5,"u_finalPower":1.3}
+    );
+
+    let meshes = [];
+
+    for (let x = 0; x < chunksPerMapSide; ++x)
+    for (let z = 0; z < chunksPerMapSide; ++z)
+        meshes.push(_terrainGen_getChunkMesh(x, z));
+
+    return {
+        meshes,
+        heightMapTexture: heightMapFB.t,
+    };
 }

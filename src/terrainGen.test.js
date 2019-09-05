@@ -53,7 +53,7 @@ let uniformSliderPair = label => {
 };
 
 let update = () => {
-    gl.viewport(0, 0, C.width, C.height);
+    gl.viewport(0, 0, 1024, 1024);
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 

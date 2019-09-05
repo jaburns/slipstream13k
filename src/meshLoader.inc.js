@@ -35,8 +35,6 @@ let meshLoader_loadMeshesBlob = bytes => {
         };
     };
 
-    // TODO verify that this is correct
-
     let meshWithRegularNormals = (verts, tris) => {
         let trisPerVert = verts.map(_ => []);
         let norms = verts.map(_ => 0);
