@@ -50,6 +50,7 @@ let socket = io()
   , camPos = [0,0,0]
   , near = 0.2
   , far = 100
+  , test = 0
   , resizeFunc = () => {
         let w = innerWidth, h = innerHeight;
         C.width = w;
@@ -75,7 +76,7 @@ onresize = resizeFunc;
 resizeFunc();
 
 socket.on("connect", () => {
-    onkeydown = k => {socket.emit('d', k.keyCode); console.log(k.keyCode); if(k.keyCode==188)camPos[2]+=0.1; if(k.keyCode==79)camPos[2]-=0.1;};
+    onkeydown = k => {socket.emit('d', k.keyCode); console.log(k.keyCode); if(k.keyCode==188)test+=1; if(k.keyCode==79)test-=1;};
     onkeyup = k => {socket.emit('u', k.keyCode);};
 
     socket.on('s', s => {
@@ -216,12 +217,27 @@ let render = state => {
         gl.uniform4f(gl.getUniformLocation(reprojectProg, 'u_proj'), inverter[0],inverter[1],inverter[2],inverter[3]);
 
         gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, depthStack[0].t);
+        gl.bindTexture(gl.TEXTURE_2D, depthStack[test].t);
         gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth'), 2);
 
         gl.activeTexture(gl.TEXTURE5);
+        gl.bindTexture(gl.TEXTURE_2D, depthStack[1].t);
+        gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth1'), 5);
+
+        gl.activeTexture(gl.TEXTURE6);
+        gl.bindTexture(gl.TEXTURE_2D, depthStack[2].t);
+        gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth2'), 6);
+
+        gl.activeTexture(gl.TEXTURE7);
         gl.bindTexture(gl.TEXTURE_2D, depthStack[3].t);
-        gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth_1'), 5);
+        gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth3'), 7);
+
+        gl.activeTexture(gl.TEXTURE8);
+        gl.bindTexture(gl.TEXTURE_2D, depthStack[4].t);
+        gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth4'), 8);
+
+        gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_time"), frame);
+
         
 
         let projection = mat4_multiply(projectionMatrix,viewMatrix);

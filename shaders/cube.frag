@@ -25,5 +25,5 @@ void main()
 
     vec2 diff = (tpos_old*0.5+0.5)-(tpos*0.5+0.5);
 
-    gl_FragColor = vec4(v_position.x,diff,1);//vec4(color.r * 0.299 + color.g * 0.587 + color.b * 0.114,diff, 1); 
+    gl_FragColor = vec4(color.r * 0.299 + color.g * 0.587 + color.b * 0.114,diff, 1);
 }
