@@ -5,6 +5,8 @@ uniform sampler2D u_depth1;
 uniform sampler2D u_depth2;
 uniform sampler2D u_depth3;
 uniform sampler2D u_depth4;
+uniform sampler2D u_depth5;
+uniform sampler2D u_depth6;
 
 uniform sampler2D u_motion;
 uniform samplerCube u_cube1;
@@ -40,8 +42,8 @@ float sampleAO(vec3 C, vec3 n_C, vec2 pos, sampler2D tex){
 
 	float vv = dot(v, v);
 	float vn = dot(v, n_C);
-    float radius2 = 0.8;
-    float bias = 0.001;
+    float radius2 = 0.7;
+    float bias = 0.0001;
     float epsilon = 0.01;
     float f = max(radius2 - vv, 0.0);
     return f * f * f * max((vn - bias) / (epsilon + vv), 0.0);
@@ -60,13 +62,15 @@ void main()
 
     float sum = 0.;
     for(int i=0; i<2; i++){
-        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+1.)/u_resolution,u_depth);
+        //sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+1.)/u_resolution,u_depth);
         sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+2.)/u_resolution*2.,u_depth1);
         sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+3.)/u_resolution*4.,u_depth2);
         sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+4.)/u_resolution*8.,u_depth3);
         sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+5.)/u_resolution*16.,u_depth4);
+        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+6.)/u_resolution*32.,u_depth5);
+        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+7.)/u_resolution*64.,u_depth6);
     }
-    sum = sum/10.;
+    sum = sum/12.;
 
     vec2 uv_off = v_uv+objectMotion;
     vec3 dir = v_pos/length(v_pos);

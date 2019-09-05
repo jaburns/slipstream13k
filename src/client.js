@@ -250,7 +250,7 @@ let render = state => {
         gl.uniform4f(gl.getUniformLocation(reprojectProg, 'u_proj'), inverter[0],inverter[1],inverter[2],inverter[3]);
 
         gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, depthStack[test].t);
+        gl.bindTexture(gl.TEXTURE_2D, depthStack[0].t);
         gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth'), 2);
 
         gl.activeTexture(gl.TEXTURE5);
@@ -268,6 +268,14 @@ let render = state => {
         gl.activeTexture(gl.TEXTURE8);
         gl.bindTexture(gl.TEXTURE_2D, depthStack[4].t);
         gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth4'), 8);
+
+        gl.activeTexture(gl.TEXTURE9);
+        gl.bindTexture(gl.TEXTURE_2D, depthStack[5].t);
+        gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth5'), 9);
+
+        gl.activeTexture(gl.TEXTURE10);
+        gl.bindTexture(gl.TEXTURE_2D, depthStack[6].t);
+        gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth6'), 10);
 
         gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_time"), frame);
 
