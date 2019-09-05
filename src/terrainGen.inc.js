@@ -1,4 +1,4 @@
-let HEIGHTMAP_SIZE = 256;
+let HEIGHTMAP_SIZE = 128;
 
 let _terrainGen_signedDistanceFill = ctx => {
     let data = ctx.getImageData(0, 0, HEIGHTMAP_SIZE, HEIGHTMAP_SIZE).data;
@@ -49,6 +49,29 @@ let _terrainGen_signedDistanceFill = ctx => {
     }
 
     ctx.putImageData(outData, 0, 0);
+};
+
+let _terrainGen_renderHeightMap = (trackCanvas, uniforms) => {
+    let heightMapTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, heightMapTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, trackCanvas);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+    let framebuffer = gfx_createFrameBufferTexture();
+
+    let shader = gfx_compileProgram(fullQuad_vert, terrainMap_frag);
+
+    gfx_renderBuffer(shader, {t:heightMapTex}, framebuffer, () => {
+        for (let k in uniforms) {
+            if (typeof uniforms[k] === 'number') {
+                gl.uniform1f(gl.getUniformLocation(shader, k), uniforms[k]);
+            } else {
+                gl.uniform3fv(gl.getUniformLocation(shader, k), uniforms[k]);
+            }
+        }
+    });
+
+    return framebuffer;
 };
 
 let terrainGen_loadTrackCanvasFromBlob = bytes => {
