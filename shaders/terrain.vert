@@ -3,7 +3,7 @@
 
 
 attribute vec3 a_position;
-attribute vec3 a_normal;
+// attribute vec3 a_normal;
 
 uniform mat4 u_model;
 uniform mat4 u_view;
@@ -35,8 +35,8 @@ void main()
     v_pos = gl_Position;
     v_position = worldPos.xyz;
 
-    bool positive = a_normal.x + a_normal.y + a_normal.z > 0.;
-    v_normal = mat3(u_model) * a_normal;
+//  bool positive = a_normal.x + a_normal.y + a_normal.z > 0.;
+//  v_normal = mat3(u_model) * a_normal;
 
     v_color = position.xyz / 50.;
 

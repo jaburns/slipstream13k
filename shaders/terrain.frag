@@ -1,5 +1,5 @@
 varying vec3 v_color;
-varying vec3 v_normal;
+// varying vec3 v_normal;
 varying vec3 v_position;
 
 varying vec4 v_pos;
