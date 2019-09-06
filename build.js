@@ -9,6 +9,7 @@ const SHADER_MIN_TOOL = process.platform === 'win32' ? 'tools\\shader_minifier.e
 const ADVZIP_TOOL = process.platform === 'win32' ? '..\\tools\\advzip.exe' : '../tools/advzip.osx';
 
 const MINIFY = process.argv[2] !== '--test';
+const PACK_DEBUG = process.argv[2] === '--packdebug';
 
 const CLIENT_JS_FILENAME = MINIFY || process.argv.length <= 3
     ? 'client.js'
@@ -280,11 +281,17 @@ const processFile = (replacements, file, code) => {
     }
 
     if (file === CLIENT_JS_FILENAME) {
-        code = convertSongDataFormat(mangleGLCalls_firstPass(code));
+        if (PACK_DEBUG) 
+            code = convertSongDataFormat(code);
+        else 
+            code = convertSongDataFormat(mangleGLCalls_firstPass(code));
     }
 
     const uglifyResult = uglify(code, {
         toplevel: file !== 'shared.js',
+        output: {
+            beautify: PACK_DEBUG
+        },
         compress: {
             ecma: 6,
             keep_fargs: false,
@@ -312,7 +319,9 @@ const processFile = (replacements, file, code) => {
     }
 
     if (file === CLIENT_JS_FILENAME) {
-        return mangleGLCalls_secondPass(uglifyResult.code);
+        return PACK_DEBUG
+            ? 'let gl=C.getContext`webgl`\n' + uglifyResult.code
+            : mangleGLCalls_secondPass(uglifyResult.code);
     }
 
     return uglifyResult.code;
@@ -326,7 +335,7 @@ const processHTML = (html, clientJS, binaryBlobs) =>
         .replace('__binaryBlobs', binaryBlobs);
 
 const main = () => {
-    constants.__DEBUG = !MINIFY;
+    constants.__DEBUG = !MINIFY || PACK_DEBUG;
 
     shell.rm('-rf', './build');
     shell.mkdir('-p', './build');
@@ -354,7 +363,7 @@ const main = () => {
 
     const finalClientJS = processFile(replacements, CLIENT_JS_FILENAME, clientCode);
     const finalSharedJS = processFile(replacements, 'shared.js', sharedCode);
-    const finalHTML = processHTML(fs.readFileSync(MINIFY ? 'src/index.html' : 'src/index.debug.html', 'utf8'), finalClientJS);
+    const finalHTML = processHTML(fs.readFileSync((MINIFY && !PACK_DEBUG) ? 'src/index.html' : 'src/index.debug.html', 'utf8'), finalClientJS);
 
     fs.writeFileSync('./build/index.html', finalHTML);
     if (finalSharedJS.length > 0) fs.writeFileSync('./build/shared.js', finalSharedJS);

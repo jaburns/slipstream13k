@@ -4,6 +4,7 @@
   "scripts": {
     "start": "node server.js",
     "pack": "node build",
+    "packdebug": "node build --packdebug",
     "test": "node build --test",
     "fast": "node build --test",
     "bash": "bash"

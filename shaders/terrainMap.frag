@@ -1,8 +1,6 @@
 
 #include "simplexNoise.glsl"
 
-#define RESOLUTION 128.0
-
 uniform sampler2D u_tex;
 
 uniform float u_preScalePower;
@@ -17,6 +15,10 @@ uniform float u_finalScale;
 uniform float u_finalPower;
 
 varying vec2 v_uv;
+
+
+const float RESOLUTION = 128.0;
+
 
 vec4 sampleTex_blur0(vec2 uv)
 {
