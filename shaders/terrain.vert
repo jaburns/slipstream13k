@@ -19,19 +19,28 @@ varying vec3 v_position;
 varying vec4 v_pos;
 varying vec4 v_pos_old;
 
+varying float v_height;
+
+uniform sampler2D u_heightMap;
+
 void main()
 {
-    vec4 worldPos = u_model * vec4(a_position, 1);
-    gl_Position = u_mvp * vec4(a_position, 1);
+    vec3 position = a_position;
+    vec2 uv = a_position.xz / 50. + .5;
+    v_height = texture2DLod(u_heightMap, uv, 0.).r;
+    position.y += 10. * v_height;
+
+    vec4 worldPos = u_model * vec4(position, 1);
+    gl_Position = u_mvp * vec4(position, 1);
     v_pos = gl_Position;
     v_position = worldPos.xyz;
 
     bool positive = a_normal.x + a_normal.y + a_normal.z > 0.;
     v_normal = mat3(u_model) * a_normal;
 
-    v_color = a_position.xyz / 50.;
+    v_color = position.xyz / 50.;
 
     // ALL OBJECT SHADERS
-    v_pos_old = u_mvp_old * vec4(a_position, 1);
+    v_pos_old = u_mvp_old * vec4(position, 1);
 
 }

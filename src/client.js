@@ -135,14 +135,15 @@ let drawScene = state => {
 
     terrainStuff.meshes.forEach((m,i) => {
         let modelMatrix = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
-        
+
+        let mvpOld = mat4_multiply(mat4_multiply(projectionMatrix,lastViewMatrix),modelMatrix);
         let mvp = mat4_multiply(mat4_multiply(projectionMatrix,viewMatrix),modelMatrix);
 
         gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_model'), false, modelMatrix);
         gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_view'), false, viewMatrix);
         gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_proj'), false, projectionMatrix);
         gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_mvp'), false, mvp);
-        gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_mvp_old'), false, mvp);
+        gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_mvp_old'), false, mvpOld);
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, terrainStuff.heightMapTexture);

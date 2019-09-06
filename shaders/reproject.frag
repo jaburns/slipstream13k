@@ -87,5 +87,5 @@ void main()
     //gl_FragColor = vec4(vec3(float(camPos.z<-50.)),1);
     //gl_FragColor = vec4(norm*0.5+0.5,1);
     //gl_FragColor = vec4(vec3(sum),1);
-    gl_FragColor = vec4(mix(col,texture2D(u_old,uv_off+offset*0.00001*camPos.z).rgb,0.95),1);
+    gl_FragColor = vec4(mix(col,texture2D(u_old,uv_off+0.*offset*0.00001*camPos.z).rgb,0.95),1);
 }

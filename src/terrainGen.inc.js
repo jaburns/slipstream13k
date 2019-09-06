@@ -58,6 +58,7 @@ let _terrainGen_renderHeightMap = (trackCanvas, uniforms) => {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
     let framebuffer = gfx_createFrameBufferTexture();
+    framebuffer.r(4096, 4096);
 
     let shader = gfx_compileProgram(fullQuad_vert, terrainMap_frag);
 
@@ -99,9 +100,9 @@ let terrainGen_loadTrackCanvasFromBlob = bytes => {
     return canvas;
 }
 
-let chunksPerMapSide = 2;
-let verticesPerChunkSide = 128;
-let worldSpaceMapSize = 50;
+let chunksPerMapSide = 5;
+let verticesPerChunkSide = 256;
+let worldSpaceMapSize = 200;
 
 let _terrainGen_getChunkMesh = (chunkX, chunkZ) => {
     let chunkUV = [chunkX / chunksPerMapSide, chunkZ / chunksPerMapSide];
@@ -117,7 +118,7 @@ let _terrainGen_getChunkMesh = (chunkX, chunkZ) => {
         ];
 
         verts.push(uv[0] * worldSpaceMapSize - worldSpaceMapSize / 2);
-        verts.push(-5);
+        verts.push(-15);
         verts.push(uv[1] * worldSpaceMapSize - worldSpaceMapSize / 2);
     }
 
