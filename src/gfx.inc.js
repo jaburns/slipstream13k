@@ -191,7 +191,7 @@ let gfx_createMotionCubeMap = () =>{
     cube[f] = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, cube[f]);
     for(var i=0; i<6; i++){
-        gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, gl.RGBA, s, s, 0, gl.RGBA, ext.HALF_FLOAT_OES, null);
+        gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, gl.RGBA, s, s, 0, gl.RGBA, 36193 /*gl.getExtension("OES_texture_half_float").HALF_FLOAT_OES*/, null);
     }
     for(var i=0; i<6;i++){
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, cube[f], 0);
@@ -217,9 +217,11 @@ let gfx_createMotionCubeMap = () =>{
     }
     return cube;
 }
+
 let downProg = gfx_compileProgram(fullQuad_vert,downSample_frag)
     , upProg = gfx_compileProgram(fullQuad_vert,upSample_frag);
-let gfx_downSample = (buf,amt,width,height) =>{
+
+let gfx_downSample = (buf,amt,mipStack) =>{
     let shader = downProg;
     let oldBuf=buf;
     for(i=0; i<amt; i++){
