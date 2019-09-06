@@ -2,12 +2,31 @@
 // Need to be careful that the sets of functions they use do not intersect
 // or those functions should be moved to shared.js.
 
+
+let lerpNum = (a, b, t) => a + (b-a)*t;
+
+let lerpPlayerStates = (a, b, t) => {
+    let result = [];
+
+    b.forEach(s => {
+        let prev = s;
+        a.forEach(s0 => s0.id == s.id && (prev = s0))
+
+        result.push({
+            id: s.id,
+            x: lerpNum(prev.x, s.x, t),
+            y: lerpNum(prev.y, s.y, t),
+        });
+    });
+
+    return result;
+}
+
 // Used by client.js
-let state_lerp = (a, b, t) =>
-    b.map((p, i) => (i < a.length) ? {
-            x: a[i].x+(p.x-a[i].x)*t,
-            y: a[i].y+(p.y-a[i].y)*t
-        } : {x:1/0,y:0});
+let state_lerp = (a, b, t) => ({
+    myId: b.myId,
+    playerStates: lerpPlayerStates(a.playerStates, b.playerStates, t)
+});
 
 // Used by server.js
 let state_updatePlayer = p => {

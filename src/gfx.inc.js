@@ -175,7 +175,7 @@ let gfx_createCubeMap = () =>{
     return cube;
 }
 
-let gfx_createMotionCubeMap = () =>{
+let gfx_createMotionCubeMap = FRAMES =>{
 
     let shader = gfx_compileProgram(fullQuad_vert,curlBox_frag);
     gl.useProgram(shader);

@@ -1,9 +1,7 @@
 let renderer_create = () => {
     let skyboxProg = gfx_compileProgram(skybox_vert, skybox_frag)
         , linProg = gfx_compileProgram(fullQuad_vert,linearize_frag)
-        , cubeProg = gfx_compileProgram(cube_vert, cube_frag)
         , reprojectProg = gfx_compileProgram(reproject_vert,reproject_frag)
-        , terrainProg = gfx_compileProgram(terrain_vert,terrain_frag)
         , copyProg = gfx_compileProgram(fullQuad_vert,copy_frag)
         , downDepthProg = gfx_compileProgram(fullQuad_vert, downDepth_frag)
         , frameBuffers = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()]
@@ -12,17 +10,14 @@ let renderer_create = () => {
         , swap = 0
         , frame = 0
         , cubeTexture = gfx_createCubeMap()
-        , motionCubeTexture = gfx_createMotionCubeMap()
-        , cubeModel = meshLoader_loadMeshesBlob(blobs[G_MODELS_BLOB])[G_MODEL_INDEX_Nuke]
-        , terrainStuff = terrainGen_getRenderer(blobs[G_MAP_BLOB])
+        , FRAMES = 32
+        , motionCubeTexture = gfx_createMotionCubeMap(FRAMES)
         , projectionMatrix
         , viewMatrix
         , lastViewMatrix
-        , transform = Transform_create()
-        , oldTransforms = []
-        , camPos = [0,0,0]
         , near = 0.2
         , far = 100
+        , aspectRatio = 1;
 
     let resize = (w, h) => {
         frameBuffers[0].r(w, h);
@@ -75,90 +70,61 @@ let renderer_create = () => {
         };
         gl.depthMask(true);
 
-        gl.useProgram(terrainProg);
+        state.objects.forEach(obj => {
+            gl.useProgram(obj.prog);
 
-        terrainStuff.meshes.forEach((m,i) => {
-            let modelMatrix = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
+            let modelMatrix = Transform_toMatrix(obj.transform);
+            if (!obj.oldModelMatrix)
+                obj.oldModelMatrix = modelMatrix;
 
-            let mvpOld = mat4_multiply(mat4_multiply(projectionMatrix,lastViewMatrix),modelMatrix);
+            let mvpOld = mat4_multiply(mat4_multiply(projectionMatrix,lastViewMatrix),obj.oldModelMatrix);
             let mvp = mat4_multiply(mat4_multiply(projectionMatrix,viewMatrix),modelMatrix);
 
-            gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_model'), false, modelMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_view'), false, viewMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_proj'), false, projectionMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_mvp'), false, mvp);
-            gl.uniformMatrix4fv(gl.getUniformLocation(terrainProg, 'u_mvp_old'), false, mvpOld);
+            obj.oldModelMatrix = modelMatrix;
 
-            gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, terrainStuff.heightMapTexture);
-            gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_heightMap'), 0);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.prog, 'u_model'), false, modelMatrix);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.prog, 'u_view'), false, viewMatrix);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.prog, 'u_proj'), false, projectionMatrix);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.prog, 'u_mvp'), false, mvp);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.prog, 'u_mvp_old'), false, mvpOld);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, m.v);
-            let posLoc = gl.getAttribLocation(terrainProg, 'a_position');
+            gl.bindBuffer(gl.ARRAY_BUFFER, obj.mesh.v);
+            let posLoc = gl.getAttribLocation(obj.prog, 'a_position');
             gl.enableVertexAttribArray(posLoc);
             gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
 
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.i);
-            gl.drawElements(gl.TRIANGLES, m.t, gl.UNSIGNED_SHORT, 0);
-        });
-
-        gl.useProgram(cubeProg);
-
-        state.forEach((player, i) => {
-            let t = Date.now() / 10000 + i*1.7;
-            transform.r = quat_setAxisAngle([.16,.81,.57], t);
-            transform.p[0] = player.x;
-            transform.p[1] = player.y;
-            transform.p[2] = -1;
-
-
-            let modelMatrix = Transform_toMatrix(transform);
-
-            if(typeof oldTransforms[i] =='undefined'){
-                oldTransforms[i]=modelMatrix;
+            if (obj.tex) {
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, obj.tex);
+                gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_objTex'), 0);
             }
-            
-            let mvpOld = mat4_multiply(mat4_multiply(projectionMatrix,lastViewMatrix),oldTransforms[i]);
-            let mvp = mat4_multiply(mat4_multiply(projectionMatrix,viewMatrix),modelMatrix);
 
-            oldTransforms[i]=modelMatrix;
+            if (obj.mesh.n) {
+                gl.bindBuffer(gl.ARRAY_BUFFER, obj.mesh.n);
+                posLoc = gl.getAttribLocation(obj.prog, 'a_normal');
+                gl.enableVertexAttribArray(posLoc);
+                gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+            }
 
-            gl.uniformMatrix4fv(gl.getUniformLocation(cubeProg, 'u_model'), false, modelMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(cubeProg, 'u_view'), false, viewMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(cubeProg, 'u_proj'), false, projectionMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(cubeProg, 'u_mvp'), false, mvp);
-            gl.uniformMatrix4fv(gl.getUniformLocation(cubeProg, 'u_mvp_old'), false, mvpOld);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, cubeModel.v);
-            let posLoc = gl.getAttribLocation(cubeProg, 'a_position');
-            gl.enableVertexAttribArray(posLoc);
-            gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, cubeModel.n);
-            posLoc = gl.getAttribLocation(cubeProg, 'a_normal');
-            gl.enableVertexAttribArray(posLoc);
-            gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
-
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeModel.i);
-            gl.drawElements(gl.TRIANGLES, cubeModel.t, gl.UNSIGNED_SHORT, 0);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.mesh.i);
+            gl.drawElements(gl.TRIANGLES, obj.mesh.t, gl.UNSIGNED_SHORT, 0);
         });
     };
 
-    let render = state => {
+    let render = scene => {
         gl.viewport(0,0,innerWidth,innerHeight);
         nextswap = (swap+1)%2;
         
         projectionMatrix = mat4_perspective(aspectRatio, near, far);
-        viewMatrix = mat4_fromRotationTranslationScale(quat_setAxisAngle([0,1,0],Math.cos(Date.now()/1000)*0.1),camPos,[1,1,1])
+        viewMatrix = mat4_invert(Transform_toMatrix(scene.cameraTransform));
 
         if(lastViewMatrix==null) lastViewMatrix=viewMatrix;
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffers[2].f);
 
-        drawScene(state);
+        drawScene(scene);
 
         lastViewMatrix = viewMatrix;
-
 
         gl.disable(gl.DEPTH_TEST);
 

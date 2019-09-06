@@ -21,13 +21,13 @@ varying vec4 v_pos_old;
 
 varying float v_height;
 
-uniform sampler2D u_heightMap;
+uniform sampler2D u_objTex;
 
 void main()
 {
     vec3 position = a_position;
     vec2 uv = a_position.xz / 50. + .5;
-    v_height = texture2DLod(u_heightMap, uv, 0.).r;
+    v_height = texture2DLod(u_objTex, uv, 0.).r;
     position.y += 10. * v_height;
 
     vec4 worldPos = u_model * vec4(position, 1);

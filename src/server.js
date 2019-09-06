@@ -1,16 +1,27 @@
 //__include state.inc.js
 
 let players = [];
+let newPlayerId = 0;
 
 setInterval(() => {
     players.forEach(p => {
         state_updatePlayer(p);
-        p.s.emit('s', players.map(p => ({x:p.x, y:p.y})));
     });
+
+    for (let i = 0; i < players.length; ++i)
+    {
+        let packet = {
+            myId: players[i].id,
+            playerStates: players.map(p => ({id:p.id, x:p.x, y:p.y}))
+        };
+
+        players[i].s.emit('s', packet);
+    }
 }, G_TICK_MILLIS);
 
 module.exports = socket => {
     let self = {
+        id: newPlayerId++,
         s: socket,
         x: Math.random(),
         y: Math.random(),
