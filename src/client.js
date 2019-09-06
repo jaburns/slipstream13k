@@ -278,6 +278,7 @@ let render = state => {
         gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth6'), 10);
 
         gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_time"), frame);
+        gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_test"), test);
 
         
 
