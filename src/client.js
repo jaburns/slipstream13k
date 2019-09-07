@@ -4,15 +4,13 @@ gl.getExtension('OES_texture_half_float_linear');
 gl.getExtension('OES_standard_derivatives');
 gl.getExtension('WEBGL_depth_texture');
 gl.getExtension("OES_texture_half_float");
-
-let blobs = __binaryBlobs
+gl.clearColor(0, 0, 0, 1);
 
 //__include soundbox-player.inc.js
 //__include song.inc.js
 
 //__include shaders.gen.js
 
-//__include math.inc.js
 //__include gfx.inc.js
 //__include meshLoader.inc.js
 //__include terrainGen.inc.js
@@ -22,6 +20,7 @@ let blobs = __binaryBlobs
 //__include renderer.inc.js
 
 let socket = io()
+  , blobs = __binaryBlobs
   , lastReceiveState
   , lastState
   , currentState
@@ -48,12 +47,6 @@ socket.on("connect", () => {
         lastReceiveState = Date.now();
     });
 });
-
-
-
-gl.clearColor(0, 0, 0, 1);
-gl.disable(gl.CULL_FACE);
-
 
 
 let terrainProg = gfx_compileProgram(terrain_vert,terrain_frag)

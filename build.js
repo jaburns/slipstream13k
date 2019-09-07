@@ -15,13 +15,21 @@ const CLIENT_JS_FILENAME = MINIFY || process.argv.length <= 3
     ? 'client.js'
     : process.argv[3] + '.test.js';
 
-let lastShaderMinNameIndex = 0;
-let getShaderMinNames = count => {
-    let newIndex = lastShaderMinNameIndex + count;
-    let result = _.range(lastShaderMinNameIndex, newIndex).map(n => 'z'+n.toString(36));
-    lastShaderMinNameIndex = newIndex;
-    return result;
-};
+
+const minNameFactory = fn => {
+    let lastIndex = 0;
+
+    return count => {
+        let newIndex = lastIndex + count;
+        let result = _.range(lastIndex, newIndex).map(fn);
+        lastIndex = newIndex;
+        return result;
+    };
+}
+
+const getShaderMinNames = minNameFactory(n => (360+n).toString(36));
+const getObjectPropertyMinNames = minNameFactory(n => (360+n).toString(36));
+const getSharedFuncMinNames = minNameFactory(n => 'l'+(36+n).toString(36));
 
 const convertSong = song => [
     song.songData.map(x => [
@@ -151,20 +159,24 @@ const findShaderInternalReplacements = allShaderCode => {
     ])
     .map(x => x.substr(1));
 
+    externals.sort((a, b) => b.length - a.length);
+
     return _.zip(
         externals.map(x => new RegExp(x, 'g')),
         getShaderMinNames(externals.length)
     );
 };
 
-const findSharedFunctionReplacements = sharedCode => {
-    const cashGlobals = _.uniq(sharedCode.match(/\$[a-zA-Z0-9_]+/g));
-    const shortGlobals = _.range(0, cashGlobals.length).map(x => '$' + x);
+const getTopLevelLets = code =>
+    code.split('\n')
+        .filter(x => x.startsWith('let '))
+        .map(x => x.substring(3, x.indexOf('=')).trim());
 
-    return _.zip(
-        cashGlobals.map(x => new RegExp('\\'+x, 'g')),
-        shortGlobals
-    );
+const findSharedFunctionReplacements = sharedCode => {
+    const sharedGlobalFuncs = getTopLevelLets(sharedCode);
+    const shortGlobals = getSharedFuncMinNames(sharedGlobalFuncs.length);
+
+    return _.zip(sharedGlobalFuncs.map(x => new RegExp(x, 'g')), shortGlobals);
 };
 
 const replaceIncludeDirectivesWithInlinedFiles = code => {
@@ -228,16 +240,10 @@ const mangleGLCalls_firstPass = code => {
 
     if (localCollisions.indexOf('uniform4iv') >= 0) {
         console.log('ERROR Sorry cant use uniform4iv!!');
+        console.log('The following identifiers are currently not mangled uniquely:');
+        console.log(allCollisions);
         process.exit(1);
     }
-    //if (localCollisions.length > 0) {
-    //    console.log('');
-    //    console.log('WARNING: The source is using one or more WebGL calls which collide in the mangler:');
-    //    console.log(localCollisions);
-    //    console.log('The following identifiers are currently not mangled uniquely:');
-    //    console.log(allCollisions);
-    //    console.log('');
-    //}
 
     code = replaceGLConstants(code);
 
