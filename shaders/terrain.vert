@@ -26,9 +26,9 @@ uniform sampler2D u_objTex;
 void main()
 {
     vec3 position = a_position;
-    vec2 uv = a_position.xz / 50. + .5;
+    vec2 uv = a_position.xz / 200. + .5;
     v_height = texture2DLod(u_objTex, uv, 0.).r;
-    position.y += 10. * v_height;
+    position.y += 40. * v_height;
 
     vec4 worldPos = u_model * vec4(position, 1);
     gl_Position = u_mvp * vec4(position, 1);

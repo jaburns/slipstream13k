@@ -164,3 +164,28 @@ let terrainGen_getRenderer = bytes => {
         heightMapTexture: heightMapFB.t,
     };
 }
+
+
+let _arrayBufferToBase64 = buffer => {
+    let binary = '';
+    let bytes = new Uint8Array( buffer );
+    for (let i = 0; i < bytes.byteLength; i++)
+        binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+}
+
+let terrainGen_serializeHeightMap = heightMapTexture => {
+    let shader = gfx_compileProgram(fullQuad_vert, copyRaw_frag);
+    let framebuffer = gfx_createFrameBufferTexture();
+    framebuffer.r(256, 256);
+    gfx_renderBuffer(shader, {t:heightMapTexture,w:256,h:256}, framebuffer);
+
+    let arr = new Float32Array(256 * 256 * 4);
+    gl.readPixels(0, 0, 256, 256, gl.RGBA, gl.FLOAT, arr);
+
+    let arrR = new Float32Array(256 * 256);
+    for (let i = 0; i < 256 * 256; ++i)
+        arrR[i] = arr[i*4];
+
+    return _arrayBufferToBase64(arrR.buffer);
+};

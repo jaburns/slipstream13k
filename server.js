@@ -13,6 +13,7 @@ function createSandbox() {
         clearTimeout,
         setInterval,
         clearInterval,
+        Buffer,
         io
     };
 

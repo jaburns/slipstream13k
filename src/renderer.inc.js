@@ -53,10 +53,8 @@ let renderer_create = () => {
 
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
-            //gl.bindTexture(gl.TEXTURE_CUBE_MAP, motionCubeTexture[0]);
             gl.uniform1i(gl.getUniformLocation(skyboxProg, "u_tex"), 0);
             let inv_vp = mat4_invert(mat4_multiply(projectionMatrix,viewMatrix));
-            let inv_vp_old = mat4_invert(mat4_multiply(projectionMatrix,lastViewMatrix));
             gl.uniformMatrix4fv(gl.getUniformLocation(skyboxProg, 'u_inv_vp'), false, inv_vp);
             gl.uniformMatrix4fv(gl.getUniformLocation(skyboxProg, 'u_reproject'), false, reproject);
 
@@ -142,18 +140,18 @@ let renderer_create = () => {
             gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_old'), 1);
 
             gl.uniform3f(gl.getUniformLocation(reprojectProg, 'u_clip'), near*far, near-far, far);
+
             let inverter = [-2.0/(projectionMatrix[0]),
             -2.0/(projectionMatrix[5]),
             (1.0- projectionMatrix[8]) / projectionMatrix[0],
             (1.0+ projectionMatrix[9]) / projectionMatrix[5]];
-            //console.log(inverter);
+
             let ip = mat4_invert(projectionMatrix);
             for(i=0; i<4;i++){
                 s="";
                 for(j=0; j<4;j++){
                     s+=ip[j*4+i]+", ";
                 }
-                //console.log(s);
             }
 
             gl.uniform4f(gl.getUniformLocation(reprojectProg, 'u_proj'), inverter[0],inverter[1],inverter[2],inverter[3]);
@@ -162,33 +160,13 @@ let renderer_create = () => {
             gl.bindTexture(gl.TEXTURE_2D, depthStack[0].t);
             gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth'), 2);
 
-            gl.activeTexture(gl.TEXTURE5);
-            gl.bindTexture(gl.TEXTURE_2D, depthStack[1].t);
-            gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth1'), 5);
-
-            gl.activeTexture(gl.TEXTURE6);
-            gl.bindTexture(gl.TEXTURE_2D, depthStack[2].t);
-            gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth2'), 6);
-
-            gl.activeTexture(gl.TEXTURE7);
-            gl.bindTexture(gl.TEXTURE_2D, depthStack[3].t);
-            gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth3'), 7);
-
-            gl.activeTexture(gl.TEXTURE8);
-            gl.bindTexture(gl.TEXTURE_2D, depthStack[4].t);
-            gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth4'), 8);
-
-            gl.activeTexture(gl.TEXTURE9);
-            gl.bindTexture(gl.TEXTURE_2D, depthStack[5].t);
-            gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth5'), 9);
-
-            gl.activeTexture(gl.TEXTURE10);
-            gl.bindTexture(gl.TEXTURE_2D, depthStack[6].t);
-            gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth6'), 10);
+            for (let i = 0; i <= 5; ++i) {
+                gl.activeTexture(gl.TEXTURE5+i);
+                gl.bindTexture(gl.TEXTURE_2D, depthStack[1+i].t);
+                gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth'+(i+1)), 5+i);
+            }
 
             gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_time"), frame);
-
-            
 
             let projection = mat4_multiply(projectionMatrix,viewMatrix);
             gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_vp'), false, mat4_invert(projection));
