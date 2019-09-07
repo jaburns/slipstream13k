@@ -5,11 +5,16 @@
     "G_MSG_KEY_DOWN": "d",
     "G_MSG_KEY_UP": "u",
 
+    "G_KEYCODE_LEFT": 37, 
+    "G_KEYCODE_UP": 38, 
+    "G_KEYCODE_RIGHT": 39, 
+    "G_KEYCODE_DOWN": 40,
+    "G_KEYCODE_SPACE": 32,
+
     "G_MAX_PREFAB_DEPTH": 10,
 
     "G_MODELS_BLOB": 0,
     "G_MAP_BLOB": 1,
-
 
     "G_MODEL_INDEX_Nuke": 0,
     "__EOF__": 0

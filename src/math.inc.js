@@ -5,6 +5,7 @@
 
 let vec3_plus = (a, b) => a.map((x,i)=>x+b[i]);
 let vec3_minus = (a, b) => a.map((x,i)=>x-b[i]);
+let vec3_lerp = (a, b, t) => a.map((x,i)=> x + t*(b[i]-x));
 
 let math_clamp01 = a => a<0?0:a>1?1:a;
 
@@ -31,6 +32,46 @@ let quat_setAxisAngle = (axis, rad) => {
     let s = Math.sin(rad);
     return [s * axis[0], s * axis[1], s * axis[2], Math.cos(rad)];
 };
+
+let quat_mul = (a, b) => [
+    a[0] * b[3] + a[3] * b[0] + a[1] * b[2] - a[2] * b[1],
+    a[1] * b[3] + a[3] * b[1] + a[2] * b[0] - a[0] * b[2],
+    a[2] * b[3] + a[3] * b[2] + a[0] * b[1] - a[1] * b[0],
+    a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]
+];
+
+let quat_slerp = (a, b, t) => {
+    let bx = b[0], by = b[1], bz = b[2], bw = b[3];
+    let omega, cosom, sinom, scale0, scale1;
+    cosom = a[0] * bx + a[1] * by + a[2] * bz + a[3] * bw;
+
+    if (cosom < 0) {
+        cosom = -cosom;
+        bx = -bx;
+        by = -by;
+        bz = -bz;
+        bw = -bw;
+    }
+
+    if ((1 - cosom) > 1e-9) {
+        omega  = Math.acos(cosom);
+        sinom  = Math.sin(omega);
+        scale0 = Math.sin((1.0 - t) * omega) / sinom;
+        scale1 = Math.sin(t * omega) / sinom;
+    } else {
+        scale0 = 1.0 - t;
+        scale1 = t;
+    }
+
+    return [
+        scale0 * a[0] + scale1 * bx,
+        scale0 * a[1] + scale1 * by,
+        scale0 * a[2] + scale1 * bz,
+        scale0 * a[3] + scale1 * bw
+    ];
+};
+
+let quat_mulVec3 = (q, v) => mat4_mulNormal(mat4_fromRotationTranslationScale(q,[0,0,0],[1,1,1]), v);
 
 let mat4_perspective = (aspect, near, far) => {
 //  let f = 1.0 / Math.tan(fovy / 2), nf = 1 / (near - far)

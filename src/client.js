@@ -82,13 +82,18 @@ let updateSceneFromGameState = state => {
     state.$playerStates.forEach(p => {
         let obj = getPlayerObject(p.$id);
 
-        obj.$transform.p[0] = p.$xPos;
-        obj.$transform.p[1] = p.$yPos;
-        obj.$transform.p[2] = -1;
+        let rot = [0,0,0,1];
+        rot = quat_mul(quat_setAxisAngle([0,1,0], p.$yaw), rot);
+        rot = quat_mul(quat_setAxisAngle(quat_mulVec3(rot, [1,0,0]), p.$pitch), rot);
+
+        obj.$transform.p = p.$position;
+        obj.$transform.r = rot;
+
+        let cameraFromShip = quat_mulVec3(rot, [0, 0.5, 1]);
 
         if (state.$myId == p.$id) {
-            scene.$cameraTransform.p[0] = p.$xPos;
-            scene.$cameraTransform.p[1] = p.$yPos + 0.5;
+            scene.$cameraTransform.p = vec3_plus(p.$position, cameraFromShip);
+            scene.$cameraTransform.r = rot;
         }
     });
 };

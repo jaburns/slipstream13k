@@ -4,8 +4,6 @@
 
 // ===== Client code =============================================================
 
-let state_lerpNum = (a, b, t) => a + (b-a)*t;
-
 let state_lerpPlayerStates = (a, b, t) => {
     let result = [];
 
@@ -15,8 +13,9 @@ let state_lerpPlayerStates = (a, b, t) => {
 
         result.push({
             $id: s.$id,
-            $xPos: state_lerpNum(prev.$xPos, s.$xPos, t),
-            $yPos: state_lerpNum(prev.$yPos, s.$yPos, t),
+            $position: vec3_lerp(prev.$position, s.$position, t), 
+            $yaw: vec3_lerp([prev.$yaw], [s.$yaw], t)[0],
+            $pitch: vec3_lerp([prev.$pitch], [s.$pitch], t)[0],
         });
     });
 
@@ -50,16 +49,19 @@ let state_convertToPacket = rootState => ({
 
 let state_PLAYER_SHARED_PROPS = [
     '$id',
-    '$xPos',
-    '$yPos'
+    '$position',
+    '$yaw',
+    '$pitch',
 ];
 
 let state_createPlayer = ($socket, $id) => ({
     $socket,
-    $id,
-    $xPos: Math.random(),
-    $yPos: Math.random(),
     $keysDown: [],
+
+    $id,
+    $position: [Math.random(), Math.random(), 0],
+    $yaw: 0,
+    $pitch: 0,
 });
 
 let state_emitToAllPlayers = rootState => {
@@ -77,13 +79,23 @@ let state_update = rootState => {
 };
 
 let state_updatePlayer = playerState => {
-    const LEFT = 37, 
-        UP = 38, 
-        RIGHT = 39, 
-        DOWN = 40;
+    let vot = 0;
 
-    if (playerState.$keysDown.indexOf(LEFT)  >= 0) playerState.$xPos -= 0.05;
-    if (playerState.$keysDown.indexOf(UP)    >= 0) playerState.$yPos += 0.05;
-    if (playerState.$keysDown.indexOf(RIGHT) >= 0) playerState.$xPos += 0.05;
-    if (playerState.$keysDown.indexOf(DOWN)  >= 0) playerState.$yPos -= 0.05;
+    if (playerState.$keysDown.indexOf(G_KEYCODE_UP)    >= 0) vot =  0.05;
+    if (playerState.$keysDown.indexOf(G_KEYCODE_DOWN)  >= 0) vot = -0.05;
+
+    let rot = 0;
+
+    if (playerState.$keysDown.indexOf(G_KEYCODE_LEFT)  >= 0) rot =  0.05;
+    if (playerState.$keysDown.indexOf(G_KEYCODE_RIGHT) >= 0) rot = -0.05;
+
+    playerState.$yaw += rot;
+    playerState.$pitch += vot;
+
+    rot = [0,0,0,1];
+    rot = quat_mul(quat_setAxisAngle([0,1,0], playerState.$yaw), rot);
+    rot = quat_mul(quat_setAxisAngle(quat_mulVec3(rot, [1,0,0]), playerState.$pitch), rot);
+    // The yaw/pitch to rotation func can be shared.
+
+    playerState.$position = vec3_plus(playerState.$position, quat_mulVec3(rot, [0,0,-0.1]));
 };
