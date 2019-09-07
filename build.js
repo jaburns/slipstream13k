@@ -152,12 +152,14 @@ const createBinaryBlobsReplacement = () => {
 };
 
 const findShaderInternalReplacements = allShaderCode => {
-    const externals = _.flatten([
-        _.uniq(allShaderCode.match(/[^a-zA-Z0-9_]v_[a-zA-Z0-9_]+/g)),
-        _.uniq(allShaderCode.match(/[^a-zA-Z0-9_]u_[a-zA-Z0-9_]+/g)),
-        _.uniq(allShaderCode.match(/[^a-zA-Z0-9_]a_[a-zA-Z0-9_]+/g))
-    ])
-    .map(x => x.substr(1));
+    const externals = _.uniq(
+        _.flatten([
+            allShaderCode.match(/[^a-zA-Z0-9_]v_[a-zA-Z0-9_]+/g),
+            allShaderCode.match(/[^a-zA-Z0-9_]u_[a-zA-Z0-9_]+/g),
+            allShaderCode.match(/[^a-zA-Z0-9_]a_[a-zA-Z0-9_]+/g)
+        ])
+        .map(x => x.substr(1))
+    );
 
     externals.sort((a, b) => b.length - a.length);
 
@@ -177,6 +179,16 @@ const findSharedFunctionReplacements = sharedCode => {
     const shortGlobals = getSharedFuncMinNames(sharedGlobalFuncs.length);
 
     return _.zip(sharedGlobalFuncs.map(x => new RegExp(x, 'g')), shortGlobals);
+};
+
+const findObjectPropertyReplacements = allCode => {
+    const props = _.uniq(allCode.match(/[^a-zA-Z0-9_]\$[a-zA-Z0-9_]+/g))
+        .map(x => x.substr(1));
+
+    return _.zip(
+        props.map(x => new RegExp('\\'+x, 'g')),
+        getObjectPropertyMinNames(props.length)
+    );
 };
 
 const replaceIncludeDirectivesWithInlinedFiles = code => {
@@ -260,16 +272,18 @@ const mangleGLCalls_firstPass = code => {
 
 const mangleGLCalls_secondPass = code => {
     const header = `
-        let k,i,n,g=C.getContext\`webgl\`;
-        for (k in g) {
-            ${mangleStringBuildHash};
-            g[ isNaN(g[k]) && ${mangleStringGetValue} ] = g[k]
+        let G=C.getContext\`webgl\`; {
+            let k,i,n;
+            for (k in G) {
+                ${mangleStringBuildHash};
+                G[ isNaN(G[k]) && ${mangleStringGetValue} ] = G[k]
+            }
         }`
         .replace(/[ \t\r\n]*/g, '')
         .replace(/let/g, 'let ')
-        .replace('king', 'k in g');
+        .replace('kinG', 'k in G');
 
-    return `${header}with(g){${code}}`;
+    return `${header}with(G){${code}}`;
 }
 
 const processFile = (replacements, file, code) => {
@@ -361,6 +375,7 @@ const main = () => {
     const replacements = _.flatten(MINIFY ? [
         findShaderInternalReplacements(allShaderCode),
         findSharedFunctionReplacements(sharedCode),
+        findObjectPropertyReplacements(clientCode + '\n' + sharedCode + '\n' + serverCode),
         blobsReplacement
     ] : [
         blobsReplacement

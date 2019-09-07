@@ -38,10 +38,10 @@ onresize = resizeFunc;
 resizeFunc();
 
 socket.on("connect", () => {
-    onkeydown = k => socket.emit('d', k.keyCode);
-    onkeyup = k => socket.emit('u', k.keyCode);
+    onkeydown = k => socket.emit(G_MSG_KEY_DOWN, k.keyCode);
+    onkeyup = k => socket.emit(G_MSG_KEY_UP, k.keyCode);
 
-    socket.on('s', s => {
+    socket.on(G_MSG_STATE_UPDATE, s => {
         lastState = currentState;
         currentState = s;
         lastReceiveState = Date.now();
@@ -55,12 +55,12 @@ let terrainProg = gfx_compileProgram(terrain_vert,terrain_frag)
   , meshes = meshLoader_loadMeshesBlob(blobs[G_MODELS_BLOB])
 
 let scene = {
-    cameraTransform: Transform_create(),
-    objects: terrainStuff.meshes.map(mesh => ({
-        transform: Transform_create(),
-        mesh,
-        prog: terrainProg,
-        tex: terrainStuff.heightMapTexture
+    $cameraTransform: Transform_create(),
+    $objects: terrainStuff.meshes.map($mesh => ({
+        $transform: Transform_create(),
+        $mesh,
+        $prog: terrainProg,
+        $tex: terrainStuff.heightMapTexture
     }))
 };
 let playerObjectsById = {};
@@ -68,30 +68,29 @@ let playerObjectsById = {};
 let getPlayerObject = id => {
     if (!(id in playerObjectsById)) {
         playerObjectsById[id] = {
-            transform: Transform_create(),
-            mesh: meshes[G_MODEL_INDEX_Nuke],
-            prog: cubeProg
+            $transform: Transform_create(),
+            $mesh: meshes[G_MODEL_INDEX_Nuke],
+            $prog: cubeProg
         };
 
-        scene.objects.push(playerObjectsById[id]);
+        scene.$objects.push(playerObjectsById[id]);
     }
     return playerObjectsById[id];
 };
 
 let updateSceneFromGameState = state => {
-    state.playerStates.forEach(ps => {
-        let obj = getPlayerObject(ps.id);
+    state.$playerStates.forEach(p => {
+        let obj = getPlayerObject(p.$id);
 
-        obj.transform.p[0] = ps.x;
-        obj.transform.p[1] = ps.y;
-        obj.transform.p[2] = -1;
+        obj.$transform.p[0] = p.$xPos;
+        obj.$transform.p[1] = p.$yPos;
+        obj.$transform.p[2] = -1;
 
-        if (state.myId == ps.id) {
-            scene.cameraTransform.p[0] = ps.x;
-            scene.cameraTransform.p[1] = ps.y + 0.5;
+        if (state.$myId == p.$id) {
+            scene.$cameraTransform.p[0] = p.$xPos;
+            scene.$cameraTransform.p[1] = p.$yPos + 0.5;
         }
     });
-
 };
 
 

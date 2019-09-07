@@ -34,7 +34,7 @@ let renderer_create = () => {
         }
     };
 
-    let drawScene = state => {
+    let drawScene = scene => {
         gl.enable(gl.DEPTH_TEST);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         
@@ -70,44 +70,44 @@ let renderer_create = () => {
         };
         gl.depthMask(true);
 
-        state.objects.forEach(obj => {
-            gl.useProgram(obj.prog);
+        scene.$objects.forEach(obj => {
+            gl.useProgram(obj.$prog);
 
-            let modelMatrix = Transform_toMatrix(obj.transform);
-            if (!obj.oldModelMatrix)
-                obj.oldModelMatrix = modelMatrix;
+            let modelMatrix = Transform_toMatrix(obj.$transform);
+            if (!obj.$oldModelMatrix)
+                obj.$oldModelMatrix = modelMatrix;
 
-            let mvpOld = mat4_multiply(mat4_multiply(projectionMatrix,lastViewMatrix),obj.oldModelMatrix);
+            let mvpOld = mat4_multiply(mat4_multiply(projectionMatrix,lastViewMatrix),obj.$oldModelMatrix);
             let mvp = mat4_multiply(mat4_multiply(projectionMatrix,viewMatrix),modelMatrix);
 
-            obj.oldModelMatrix = modelMatrix;
+            obj.$oldModelMatrix = modelMatrix;
 
-            gl.uniformMatrix4fv(gl.getUniformLocation(obj.prog, 'u_model'), false, modelMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(obj.prog, 'u_view'), false, viewMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(obj.prog, 'u_proj'), false, projectionMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(obj.prog, 'u_mvp'), false, mvp);
-            gl.uniformMatrix4fv(gl.getUniformLocation(obj.prog, 'u_mvp_old'), false, mvpOld);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_model'), false, modelMatrix);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_view'), false, viewMatrix);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_proj'), false, projectionMatrix);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvp'), false, mvp);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvp_old'), false, mvpOld);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, obj.mesh.v);
-            let posLoc = gl.getAttribLocation(obj.prog, 'a_position');
+            gl.bindBuffer(gl.ARRAY_BUFFER, obj.$mesh.v);
+            let posLoc = gl.getAttribLocation(obj.$prog, 'a_position');
             gl.enableVertexAttribArray(posLoc);
             gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
 
-            if (obj.tex) {
+            if (obj.$tex) {
                 gl.activeTexture(gl.TEXTURE0);
-                gl.bindTexture(gl.TEXTURE_2D, obj.tex);
+                gl.bindTexture(gl.TEXTURE_2D, obj.$tex);
                 gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_objTex'), 0);
             }
 
-            if (obj.mesh.n) {
-                gl.bindBuffer(gl.ARRAY_BUFFER, obj.mesh.n);
-                posLoc = gl.getAttribLocation(obj.prog, 'a_normal');
+            if (obj.$mesh.n) {
+                gl.bindBuffer(gl.ARRAY_BUFFER, obj.$mesh.n);
+                posLoc = gl.getAttribLocation(obj.$prog, 'a_normal');
                 gl.enableVertexAttribArray(posLoc);
                 gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
             }
 
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.mesh.i);
-            gl.drawElements(gl.TRIANGLES, obj.mesh.t, gl.UNSIGNED_SHORT, 0);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.$mesh.i);
+            gl.drawElements(gl.TRIANGLES, obj.$mesh.t, gl.UNSIGNED_SHORT, 0);
         });
     };
 
@@ -116,7 +116,7 @@ let renderer_create = () => {
         nextswap = (swap+1)%2;
         
         projectionMatrix = mat4_perspective(aspectRatio, near, far);
-        viewMatrix = mat4_invert(Transform_toMatrix(scene.cameraTransform));
+        viewMatrix = mat4_invert(Transform_toMatrix(scene.$cameraTransform));
 
         if(lastViewMatrix==null) lastViewMatrix=viewMatrix;
 

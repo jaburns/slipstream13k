@@ -1,45 +1,27 @@
 //__include state.inc.js
 
-let players = [];
+let state = state_createRoot();
 let newPlayerId = 0;
 
 setInterval(() => {
-    players.forEach(p => {
-        state_updatePlayer(p);
-    });
-
-    for (let i = 0; i < players.length; ++i)
-    {
-        let packet = {
-            myId: players[i].id,
-            playerStates: players.map(p => ({id:p.id, x:p.x, y:p.y}))
-        };
-
-        players[i].s.emit('s', packet);
-    }
+    state_update(state);
+    state_emitToAllPlayers(state);
 }, G_TICK_MILLIS);
 
 module.exports = socket => {
-    let self = {
-        id: newPlayerId++,
-        s: socket,
-        x: Math.random(),
-        y: Math.random(),
-        k: [],
-    };
+    let self = state_createPlayer(socket, newPlayerId++);
+    state.$playerStates.push(self);
 
-    players.push(self);
-
-    socket.on('d', keyCode => {
-        if (self.k.indexOf(keyCode) < 0) self.k.push(keyCode);
+    socket.on(G_MSG_KEY_DOWN, keyCode => {
+        if (self.$keysDown.indexOf(keyCode) < 0) self.$keysDown.push(keyCode);
     });
 
-    socket.on('u', keyCode => {
-        let index = self.k.indexOf(keyCode);
-        if (index >= 0) self.k.splice(index, 1);
+    socket.on(G_MSG_KEY_UP, keyCode => {
+        let index = self.$keysDown.indexOf(keyCode);
+        if (index >= 0) self.$keysDown.splice(index, 1);
     });
 
     socket.on('disconnect', () => {
-        players.splice(players.indexOf(self), 1);
+        state.$playerStates.splice(state.$playerStates.indexOf(self), 1);
     });
 };

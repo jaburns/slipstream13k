@@ -1,10 +1,15 @@
 {
     "G_TICK_MILLIS": 33,
 
+    "G_MSG_STATE_UPDATE": "s",
+    "G_MSG_KEY_DOWN": "d",
+    "G_MSG_KEY_UP": "u",
+
     "G_MAX_PREFAB_DEPTH": 10,
 
     "G_MODELS_BLOB": 0,
     "G_MAP_BLOB": 1,
+
 
     "G_MODEL_INDEX_Nuke": 0,
     "__EOF__": 0
