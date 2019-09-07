@@ -39,35 +39,33 @@ let gfx_compileProgram = (vert, frag) => {
     return prog;
 };
 
-let gfx_renderBuffer; {
-    let vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,-1,-1,1,-1,1,-1,1,1,-1,1]), gl.STATIC_DRAW);
+let gfx_fullQuadVertexBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, gfx_fullQuadVertexBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,-1,-1,1,-1,1,-1,1,1,-1,1]), gl.STATIC_DRAW);
 
-    gfx_renderBuffer = (shader, src, dst, preDraw) => {
-        gl.useProgram(shader);
+let gfx_renderBuffer = (shader, src, dst, preDraw) => {
+    gl.useProgram(shader);
 
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, src.t||src);
-        gl.uniform1i(gl.getUniformLocation(shader, "u_tex"), 0);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, src.t||src);
+    gl.uniform1i(gl.getUniformLocation(shader, "u_tex"), 0);
 
-        gl.uniform2f(gl.getUniformLocation(shader, 'u_resolution'), src.w||dst.w, src.h||dst.h);
+    gl.uniform2f(gl.getUniformLocation(shader, 'u_resolution'), src.w||dst.w, src.h||dst.h);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-        let posLoc = gl.getAttribLocation(shader, "a_position");
-        gl.enableVertexAttribArray(posLoc);
-        gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gfx_fullQuadVertexBuffer);
+    let posLoc = gl.getAttribLocation(shader, "a_position");
+    gl.enableVertexAttribArray(posLoc);
+    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 
-        preDraw && preDraw();
-        if(dst){
-            gl.bindFramebuffer(gl.FRAMEBUFFER,dst.f);
-            gl.viewport(0,0,dst.w,dst.h);
-        }else{
-            gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-            gl.viewport(0,0,C.width,C.height);
-        }
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-    };
+    preDraw && preDraw();
+    if(dst){
+        gl.bindFramebuffer(gl.FRAMEBUFFER,dst.f);
+        gl.viewport(0,0,dst.w,dst.h);
+    }else{
+        gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+        gl.viewport(0,0,C.width,C.height);
+    }
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
 };
 
 let gfx_createFrameBufferTexture = () => {
@@ -114,7 +112,7 @@ let gfx_createFrameBufferTexture = () => {
     return result;
 };
 
-rotations = [
+let gfx_rotations = [
     [ 0, 0, -1,
       0, 1, 0,
       1, 0, 0],
@@ -155,14 +153,9 @@ let gfx_createCubeMap = () =>{
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, cube, 0);
         gl.viewport(0,0,s,s);
 
-        gl.uniformMatrix3fv(gl.getUniformLocation(shader, 'u_rot'), false,rotations[i]);
+        gl.uniformMatrix3fv(gl.getUniformLocation(shader, 'u_rot'), false,gfx_rotations[i]);
 
-        let vertexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,-1,-1,1,-1,1,-1,1,1,-1,1]), gl.STATIC_DRAW);
-
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, gfx_fullQuadVertexBuffer);
         let posLoc = gl.getAttribLocation(shader, "a_position");
         gl.enableVertexAttribArray(posLoc);
         gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
@@ -197,15 +190,10 @@ let gfx_createMotionCubeMap = FRAMES =>{
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, cube[f], 0);
         gl.viewport(0,0,s,s);
 
-        gl.uniformMatrix3fv(gl.getUniformLocation(shader, 'u_rot'), false,rotations[i]);
+        gl.uniformMatrix3fv(gl.getUniformLocation(shader, 'u_rot'), false,gfx_rotations[i]);
         gl.uniform1f(gl.getUniformLocation(shader, 'u_slice'),f/FRAMES);
 
-
-        let vertexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,-1,-1,1,-1,1,-1,1,1,-1,1]), gl.STATIC_DRAW);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, gfx_fullQuadVertexBuffer);
         let posLoc = gl.getAttribLocation(shader, "a_position");
         gl.enableVertexAttribArray(posLoc);
         gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
@@ -218,11 +206,11 @@ let gfx_createMotionCubeMap = FRAMES =>{
     return cube;
 }
 
-let downProg = gfx_compileProgram(fullQuad_vert,downSample_frag)
-    , upProg = gfx_compileProgram(fullQuad_vert,upSample_frag);
+let gfx_downProg = gfx_compileProgram(fullQuad_vert,downSample_frag)
+    , gfx_upProg = gfx_compileProgram(fullQuad_vert,upSample_frag);
 
 let gfx_downSample = (buf,amt,mipStack) =>{
-    let shader = downProg;
+    let shader = gfx_downProg;
     let oldBuf=buf;
     for(i=0; i<amt; i++){
         buf = mipStack[i];
@@ -230,7 +218,7 @@ let gfx_downSample = (buf,amt,mipStack) =>{
         oldBuf=buf;
     }
 
-    shader = upProg;
+    shader = gfx_upProg;
 
     for(i=amt-2; i>1; i--){
         buf = mipStack[i];

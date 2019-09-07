@@ -15,7 +15,13 @@ const CLIENT_JS_FILENAME = MINIFY || process.argv.length <= 3
     ? 'client.js'
     : process.argv[3] + '.test.js';
 
-let shaderMinNames = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(x => 'z' + x);
+let lastShaderMinNameIndex = 0;
+let getShaderMinNames = count => {
+    let newIndex = lastShaderMinNameIndex + count;
+    let result = _.range(lastShaderMinNameIndex, newIndex).map(n => 'z'+n.toString(36));
+    lastShaderMinNameIndex = newIndex;
+    return result;
+};
 
 const convertSong = song => [
     song.songData.map(x => [
@@ -92,7 +98,7 @@ const buildShaderIncludeFile = () => {
 
     let lines = fileContents.split('\n');
 
-    _.zip(allIncludedFunctionNames, shaderMinNames.splice(0, allIncludedFunctionNames.length)).forEach(([from, to]) => {
+    _.zip(allIncludedFunctionNames, getShaderMinNames(allIncludedFunctionNames.length)).forEach(([from, to]) => {
         lines = lines.map(line => {
             let trimLine = line.trim();
 
@@ -139,20 +145,15 @@ const createBinaryBlobsReplacement = () => {
 
 const findShaderInternalReplacements = allShaderCode => {
     const externals = _.flatten([
-        _.uniq(allShaderCode.match(/ v_[a-zA-Z0-9_]+/g)),
-        _.uniq(allShaderCode.match(/ u_[a-zA-Z0-9_]+/g)),
-        _.uniq(allShaderCode.match(/ a_[a-zA-Z0-9_]+/g))
+        _.uniq(allShaderCode.match(/[^a-zA-Z0-9_]v_[a-zA-Z0-9_]+/g)),
+        _.uniq(allShaderCode.match(/[^a-zA-Z0-9_]u_[a-zA-Z0-9_]+/g)),
+        _.uniq(allShaderCode.match(/[^a-zA-Z0-9_]a_[a-zA-Z0-9_]+/g))
     ])
-    .map(x => x.trim());
-
-    if (externals.length > shaderMinNames.length) {
-        console.log('Not enough names in shaderMinNames');
-        process.exit(1);
-    }
+    .map(x => x.substr(1));
 
     return _.zip(
         externals.map(x => new RegExp(x, 'g')),
-        shaderMinNames.splice(0, externals.length)
+        getShaderMinNames(externals.length)
     );
 };
 
