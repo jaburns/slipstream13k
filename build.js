@@ -292,7 +292,10 @@ const processFile = (replacements, file, code) => {
     if (!MINIFY) {
         if (file === 'shared.js') {
             for (let k in constants) {
-                code = `let ${k} = ${constants[k]};\n` + code;
+                if (typeof constants[k] === 'string')
+                    code = `let ${k} = "${constants[k]}";\n` + code;
+                else 
+                    code = `let ${k} = ${constants[k]};\n` + code;
             }
         }
         if (file === CLIENT_JS_FILENAME) {
