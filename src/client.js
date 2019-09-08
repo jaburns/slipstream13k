@@ -37,18 +37,6 @@ C.style.left = C.style.top = 0;
 onresize = resizeFunc;
 resizeFunc();
 
-socket.on("connect", () => {
-    onkeydown = k => socket.emit(G_MSG_KEY_DOWN, k.keyCode);
-    onkeyup = k => socket.emit(G_MSG_KEY_UP, k.keyCode);
-
-    socket.on(G_MSG_STATE_UPDATE, s => {
-        lastState = currentState;
-        currentState = s;
-        lastReceiveState = Date.now();
-    });
-});
-
-
 let terrainProg = gfx_compileProgram(terrain_vert,terrain_frag)
   , cubeProg = gfx_compileProgram(cube_vert, cube_frag)
   , terrainStuff = terrainGen_getRenderer(blobs[G_MAP_BLOB])
@@ -116,3 +104,36 @@ let exampleSFX=__includeSongData({songData:[{i:[0,255,116,1,0,255,120,0,1,127,4,
 sbPlay(exampleSFX, x => soundEffect = x);
 sbPlay(song);
 onclick = soundEffect
+
+
+socket.on("connect", () => {
+    onkeydown = k => socket.emit(G_MSG_KEY_DOWN, k.keyCode);
+    onkeyup = k => socket.emit(G_MSG_KEY_UP, k.keyCode);
+
+    socket.on(G_MSG_STATE_UPDATE, s => {
+        lastState = currentState;
+        currentState = s;
+        lastReceiveState = Date.now();
+    });
+
+    socket.on(G_MSG_REQUEST_TERRAIN, () => {
+        socket.emit(G_MSG_UPLOAD_TERRAIN, terrainGen_serializeHeightMap(terrainStuff.heightMapTexture));
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

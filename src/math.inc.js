@@ -40,6 +40,11 @@ let quat_mul = (a, b) => [
     a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]
 ];
 
+let quat_fromYawPitch = (yaw, pitch) => {
+    let rot = quat_setAxisAngle([0,1,0], yaw);
+    return quat_mul(quat_setAxisAngle(quat_mulVec3(rot, [1,0,0]), pitch), rot);
+};
+
 let quat_slerp = (a, b, t) => {
     let bx = b[0], by = b[1], bz = b[2], bw = b[3];
     let omega, cosom, sinom, scale0, scale1;

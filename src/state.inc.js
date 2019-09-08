@@ -79,23 +79,11 @@ let state_update = rootState => {
 };
 
 let state_updatePlayer = playerState => {
-    let vot = 0;
+    if (playerState.$keysDown.indexOf(G_KEYCODE_UP)    >= 0) playerState.$pitch += 0.05;
+    if (playerState.$keysDown.indexOf(G_KEYCODE_DOWN)  >= 0) playerState.$pitch -= 0.05;
+    if (playerState.$keysDown.indexOf(G_KEYCODE_LEFT)  >= 0) playerState.$yaw += 0.05;
+    if (playerState.$keysDown.indexOf(G_KEYCODE_RIGHT) >= 0) playerState.$yaw -= 0.05;
 
-    if (playerState.$keysDown.indexOf(G_KEYCODE_UP)    >= 0) vot =  0.05;
-    if (playerState.$keysDown.indexOf(G_KEYCODE_DOWN)  >= 0) vot = -0.05;
-
-    let rot = 0;
-
-    if (playerState.$keysDown.indexOf(G_KEYCODE_LEFT)  >= 0) rot =  0.05;
-    if (playerState.$keysDown.indexOf(G_KEYCODE_RIGHT) >= 0) rot = -0.05;
-
-    playerState.$yaw += rot;
-    playerState.$pitch += vot;
-
-    rot = [0,0,0,1];
-    rot = quat_mul(quat_setAxisAngle([0,1,0], playerState.$yaw), rot);
-    rot = quat_mul(quat_setAxisAngle(quat_mulVec3(rot, [1,0,0]), playerState.$pitch), rot);
-    // The yaw/pitch to rotation func can be shared.
-
-    playerState.$position = vec3_plus(playerState.$position, quat_mulVec3(rot, [0,0,-0.1]));
+    let rotation = quat_fromYawPitch(playerState.$yaw, playerState.$pitch);
+    playerState.$position = vec3_plus(playerState.$position, quat_mulVec3(rotation, [0,0,-0.5]));
 };
