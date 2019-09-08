@@ -57,7 +57,7 @@ let getPlayerObject = id => {
     if (!(id in playerObjectsById)) {
         playerObjectsById[id] = {
             $transform: Transform_create(),
-            $mesh: meshes[G_MODEL_INDEX_Nuke],
+            $mesh: meshes[G_MODEL_INDEX_ShipGameObject],
             $prog: cubeProg
         };
 
@@ -76,6 +76,7 @@ let updateSceneFromGameState = state => {
 
         obj.$transform.p = p.$position;
         obj.$transform.r = rot;
+        obj.$transform.s = [.4,.4,.4];
 
         let cameraFromShip = quat_mulVec3(rot, [0, 0.5, 1]);
 
