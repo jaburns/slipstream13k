@@ -5,6 +5,7 @@ gl.getExtension('OES_standard_derivatives');
 gl.getExtension('WEBGL_depth_texture');
 gl.getExtension("OES_texture_half_float");
 gl.clearColor(0, 0, 0, 1);
+gl.enable(gl.CULL_FACE);
 
 //__include soundbox-player.inc.js
 //__include song.inc.js
@@ -77,7 +78,7 @@ let updateSceneFromGameState = state => {
 
         if (state.$myId == p.$id) {
             let cameraSeekRot = quat_fromYawPitchRoll(p.$yaw, p.$pitch, 0);
-            let cameraSeekPos = vec3_plus(p.$position, quat_mulVec3(cameraSeekRot, [0,.2,-2]));
+            let cameraSeekPos = vec3_plus(p.$position, quat_mulVec3(cameraSeekRot, [0,.5,-2]));
 
             scene.$cameraTransform.p = vec3_lerp(scene.$cameraTransform.p, cameraSeekPos, 0.02);
             scene.$cameraTransform.r = quat_slerp(scene.$cameraTransform.r, cameraSeekRot, 0.1);
