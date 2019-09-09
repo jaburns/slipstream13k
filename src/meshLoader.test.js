@@ -1,5 +1,4 @@
 //__include shaders.gen.js
-//__include math.inc.js
 //__include gfx.inc.js
 //__include meshLoader.inc.js
 
@@ -16,17 +15,17 @@ gl.viewport(0, 0, w, h);
 let aspectRatio = w / h;
 
 let transform = {
-    p: [0,0,-1],
+    p: [0,0,-3],
     r: [0,0,0,1],
     s: [1,1,1]
 };
 
-let cubeModel = meshLoader_loadMeshesBlob(blobs[G_MODELS_BLOB])[G_MODEL_INDEX_Nuke];
+let cubeModel = meshLoader_loadMeshesBlob(blobs[G_MODELS_BLOB])[G_MODEL_INDEX_ShipGameObject];
 
 let testNormalsProg = gfx_compileProgram(testNormals_vert, testNormals_frag)
 
 let update = () => {
-    let t = Date.now() / 1000;
+    let t = Date.now() / 10000;
     transform.r = quat_setAxisAngle([.81,.16,.57], t);
 
     let viewMatrix = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
