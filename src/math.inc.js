@@ -7,7 +7,8 @@ let vec3_plus = (a, b) => a.map((x,i)=>x+b[i]);
 let vec3_minus = (a, b) => a.map((x,i)=>x-b[i]);
 let vec3_lerp = (a, b, t) => a.map((x,i)=> x + t*(b[i]-x));
 
-let math_clamp01 = a => a<0?0:a>1?1:a;
+let math_clamp = (a,b,x) => x<a?a:x>b?b:x;
+let math_clamp01 = x => math_clamp(0,1,x);
 
 let vec3_cross = (a, b) => [
     a[1] * b[2] - a[2] * b[1],

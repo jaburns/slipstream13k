@@ -116,9 +116,9 @@ let _terrainGen_getChunkMesh = (chunkX, chunkZ) => {
             chunkUV[1] + vz / (verticesPerChunkSide - 1) / chunksPerMapSide,
         ];
 
-        verts.push(uv[0] * G_TERRAIN_WORLDSPACE_SIZE - G_TERRAIN_WORLDSPACE_SIZE / 2);
+        verts.push(uv[0] * G_TERRAIN_WORLDSPACE_SIZE);
         verts.push(0);
-        verts.push(uv[1] * G_TERRAIN_WORLDSPACE_SIZE - G_TERRAIN_WORLDSPACE_SIZE / 2);
+        verts.push(uv[1] * G_TERRAIN_WORLDSPACE_SIZE);
     }
 
     for (var x = 0; x < verticesPerChunkSide - 1; x++)
@@ -176,14 +176,14 @@ let _arrayBufferToBase64 = buffer => {
 let terrainGen_serializeHeightMap = heightMapTexture => {
     let shader = gfx_compileProgram(fullQuad_vert, copyRaw_frag);
     let framebuffer = gfx_createFrameBufferTexture();
-    framebuffer.r(256, 256);
-    gfx_renderBuffer(shader, {t:heightMapTexture,w:256,h:256}, framebuffer);
+    framebuffer.r(G_TERRAIN_UPLOAD_RESOLUTION, G_TERRAIN_UPLOAD_RESOLUTION);
+    gfx_renderBuffer(shader, {t:heightMapTexture,w:G_TERRAIN_UPLOAD_RESOLUTION,h:G_TERRAIN_UPLOAD_RESOLUTION}, framebuffer);
 
-    let arr = new Float32Array(256 * 256 * 4);
-    gl.readPixels(0, 0, 256, 256, gl.RGBA, gl.FLOAT, arr);
+    let arr = new Float32Array(G_TERRAIN_UPLOAD_RESOLUTION * G_TERRAIN_UPLOAD_RESOLUTION * 4);
+    gl.readPixels(0, 0, G_TERRAIN_UPLOAD_RESOLUTION, G_TERRAIN_UPLOAD_RESOLUTION, gl.RGBA, gl.FLOAT, arr);
 
-    let arrR = new Float32Array(256 * 256);
-    for (let i = 0; i < 256 * 256; ++i)
+    let arrR = new Float32Array(G_TERRAIN_UPLOAD_RESOLUTION * G_TERRAIN_UPLOAD_RESOLUTION);
+    for (let i = 0; i < G_TERRAIN_UPLOAD_RESOLUTION * G_TERRAIN_UPLOAD_RESOLUTION; ++i)
         arrR[i] = arr[i*4];
 
     return _arrayBufferToBase64(arrR.buffer);

@@ -26,7 +26,7 @@ uniform sampler2D u_objTex;
 void main()
 {
     vec3 position = a_position;
-    v_uv = a_position.xz / G_TERRAIN_WORLDSPACE_SIZE + .5;
+    v_uv = a_position.xz / G_TERRAIN_WORLDSPACE_SIZE;
     vec4 terrainLookup = texture2DLod(u_objTex, v_uv, 0.);
     position.y += G_TERRAIN_WORLDSPACE_HEIGHT * terrainLookup.r;
 

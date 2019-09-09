@@ -61,7 +61,7 @@ let state_createPlayer = ($socket, $id) => ({
     $keysDown: [],
 
     $id,
-    $position: [0,0,0],
+    $position: [0,G_TERRAIN_WORLDSPACE_HEIGHT * 2,G_TERRAIN_WORLDSPACE_SIZE],
     $yaw: 0,
     $pitch: 0,
     $roll: 0,
@@ -121,4 +121,10 @@ let state_updatePlayer = playerState => {
     let orientation = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, playerState.$roll);
 
     playerState.$position = vec3_plus(playerState.$position, quat_mulVec3(orientation, [0, 0, -.15]));
+
+    if (collision_sampleHeightMap(playerState.$position[0], playerState.$position[2]) > playerState.$position[1]) {
+        let normal = collision_sampleWorldNormal(playerState.$position[0], playerState.$position[2]);
+        playerState.$position = vec3_plus(playerState.$position, normal);
+            //[0,G_TERRAIN_WORLDSPACE_HEIGHT * 2,G_TERRAIN_WORLDSPACE_SIZE];
+    }
 };
