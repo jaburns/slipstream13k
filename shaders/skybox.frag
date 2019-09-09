@@ -5,6 +5,7 @@ varying vec2 v_uv;
 
 void main()
 {
-    vec3 pos = v_pos.xyz/v_pos.w;
+    //vec3 pos = v_pos.xyz/v_pos.w;
+    vec3 pos = v_pos.xyz;
     gl_FragColor = vec4(textureCube(u_tex, pos/length(pos)).r,v_reproject.xy/v_reproject.w*0.5+0.5-v_uv,1.);
 }

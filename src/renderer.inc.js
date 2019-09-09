@@ -41,6 +41,11 @@ let renderer_create = () => {
         gl.depthMask(false);
         {
             let projection = mat4_multiply(projectionMatrix,viewMatrix);
+            var rv = viewMatrix.map(x=>x);
+            rv[12]=0;
+            rv[13]=0;
+            rv[14]=0;
+            
             let lastProjection = mat4_multiply(projectionMatrix,lastViewMatrix)
             let reproject = mat4_multiply(lastProjection,mat4_invert(projection));
 
@@ -54,7 +59,7 @@ let renderer_create = () => {
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
             gl.uniform1i(gl.getUniformLocation(skyboxProg, "u_tex"), 0);
-            let inv_vp = mat4_invert(mat4_multiply(projectionMatrix,viewMatrix));
+            let inv_vp = mat4_invert(mat4_multiply(projectionMatrix,rv));
             gl.uniformMatrix4fv(gl.getUniformLocation(skyboxProg, 'u_inv_vp'), false, inv_vp);
             gl.uniformMatrix4fv(gl.getUniformLocation(skyboxProg, 'u_reproject'), false, reproject);
 
@@ -168,7 +173,13 @@ let renderer_create = () => {
 
             gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_time"), frame);
 
-            let projection = mat4_multiply(projectionMatrix,viewMatrix);
+            var rv = viewMatrix.map(x=>x);
+            rv[12]=0;
+            rv[13]=0;
+            rv[14]=0;
+
+            let projection = mat4_multiply(projectionMatrix,rv);
+
             gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_vp'), false, mat4_invert(projection));
 
             gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_p'), false, mat4_invert(projectionMatrix));
