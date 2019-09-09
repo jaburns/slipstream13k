@@ -84,6 +84,13 @@ let state_update = rootState => {
     });
 };
 
+let _velToYawPitch = vel => {
+    let normVel = vec3_normalize(vel);
+    let pitch = Math.PI/2 - Math.acos(vec3_dot(normVel, [0,1,0]));
+    let yaw = Math.atan2(-vel[0], -vel[2]);
+    return [yaw, pitch];
+};
+
 let state_updatePlayer = playerState => {
 
     // Pitch controls
@@ -125,9 +132,16 @@ let state_updatePlayer = playerState => {
 
     if (collision_sampleHeightMap(playerState.$position[0], playerState.$position[2]) > playerState.$position[1]) {
         let normal = collision_sampleWorldNormal(playerState.$position[0], playerState.$position[2]);
-        playerState.$position = vec3_plus(playerState.$position, normal);
+        if (vec3_dot(velocity, normal) <= 0) {
+            let newVel = vec3_reflect(velocity, normal);
 
-        // TODO vec3_reflect(velocity, normal) and then rebuild yaw and pitch from that vector
-            //[0,G_TERRAIN_WORLDSPACE_HEIGHT * 2,G_TERRAIN_WORLDSPACE_SIZE];
+            let zzz = _velToYawPitch(newVel);
+
+            playerState.$yaw = zzz[0];
+            playerState.$pitch = zzz[1];
+
+            playerState.$yawVel = 0;
+            playerState.$pitchVel = 0;
+        }
     }
 };

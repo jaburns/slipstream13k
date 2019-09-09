@@ -58,7 +58,7 @@ let _terrainGen_renderHeightMap = (trackCanvas, uniforms) => {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
     let framebuffer = gfx_createFrameBufferTexture();
-    framebuffer.r(4096, 4096);
+    framebuffer.r(2048, 2048);
 
     let shader = gfx_compileProgram(fullQuad_vert, terrainMap_frag);
 

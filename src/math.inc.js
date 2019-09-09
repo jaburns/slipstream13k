@@ -21,10 +21,8 @@ let vec3_cross = (a, b) => [
 let vec3_reflect = (v, n) =>
     vec3_minus(v, n.map(x=>x*2*vec3_dot(v, n)));
 
-let vec3_normalize = a => {
-    let len = Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
-    return a.map(x=>x/len);
-};
+let vec3_length = a => Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
+let vec3_normalize = a => a.map(x=>x/vec3_length(a));
 
 let vec3_bufferMap = (buffer, fn) => {
     let result = [];
