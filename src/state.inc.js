@@ -130,8 +130,15 @@ let state_updatePlayer = playerState => {
 
     playerState.$position = vec3_plus(playerState.$position, velocity);
 
+
     if (collision_sampleHeightMap(playerState.$position[0], playerState.$position[2]) > playerState.$position[1]) {
         let normal = collision_sampleWorldNormal(playerState.$position[0], playerState.$position[2]);
+        let normalStep = normal.map(x => G_TERRAIN_UPLOAD_RESOLUTION / G_TERRAIN_WORLDSPACE_SIZE);
+
+    //  while (collision_sampleHeightMap(playerState.$position[0], playerState.$position[2]) > playerState.$position[1]) {
+    //      playerState.$position = vec3_plus(playerState.$position, normalStep);
+    //  }
+
         if (vec3_dot(velocity, normal) <= 0) {
             let newVel = vec3_reflect(velocity, normal);
 

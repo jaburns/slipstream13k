@@ -21,5 +21,5 @@ void main()
     float height = terrainLookup.r;
     float shadow = terrainLookup.g;
 
-    gl_FragColor = vec4(shadow * 0.5*height, diff, 1);
+    gl_FragColor = vec4((0.25+0.75*shadow) * 0.5*height, diff, 1);
 }
