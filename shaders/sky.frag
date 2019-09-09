@@ -28,7 +28,6 @@ void main()
               turb(p+vec3(0.4,0.4,0.4),0.6,4.,5)
 							)
 							,0.3,2.,8);
-    vec3 sun = vec3(0.,-0.4,-1);
-    sun = sun/length(sun);
-		gl_FragColor = vec4(n*float(n>0.3)+float(dot(dir,sun)>0.9)*1000.,0.,0.,1.);
+    vec3 sun = normalize(vec3(0.,-1,-2));
+	gl_FragColor = vec4(n*float(n>0.3)+float(dot(dir,sun)>0.9)*1000.,0.,0.,1.);
 }

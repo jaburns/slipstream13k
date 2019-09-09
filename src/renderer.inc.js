@@ -37,6 +37,7 @@ let renderer_create = () => {
     let drawScene = scene => {
         gl.enable(gl.DEPTH_TEST);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.blendFunc(gl.ONE,gl.ZERO);
         
         gl.depthMask(false);
         {

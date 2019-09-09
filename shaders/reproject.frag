@@ -94,5 +94,6 @@ void main()
     //gl_FragColor = vec4(vec3(float(camPos.z<-50.)),1);
     //gl_FragColor = vec4(norm*0.5+0.5,1);
     //gl_FragColor = vec4(vec3(sum),1);
-    gl_FragColor = vec4(mix(col,texture2D(u_old,uv_off+offset*0.000003*camPos.z).rgb,0.9),1);
+    float depth = clamp(-camPos.z*0.025,0.,1.);
+    gl_FragColor = vec4(mix(col,texture2D(u_old,uv_off+offset*0.0002*depth).rgb,0.95),1);
 }

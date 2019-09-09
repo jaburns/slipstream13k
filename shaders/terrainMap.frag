@@ -26,29 +26,9 @@ vec4 sampleTex_blur0(vec2 uv)
     return texture2D(u_tex, uv);
 }
 
-vec4 sampleTex_blur1(vec2 uv)
-{
-    vec4 color = vec4(0.0);
-    vec2 off1 = vec2(1.3, 0);
-    color += sampleTex_blur0(uv) * 0.29;
-    color += sampleTex_blur0(uv + (off1 / RESOLUTION)) * 0.35;
-    color += sampleTex_blur0(uv - (off1 / RESOLUTION)) * 0.35;
-    return color; 
-}
-
-vec4 sampleTex_blur2(vec2 uv)
-{
-    vec4 color = vec4(0.0);
-    vec2 off1 = vec2(0, 1.3);
-    color += sampleTex_blur1(uv) * 0.29;
-    color += sampleTex_blur1(uv + (off1 / RESOLUTION)) * 0.35;
-    color += sampleTex_blur1(uv - (off1 / RESOLUTION)) * 0.35;
-    return color; 
-}
-
 float getHeight(vec2 uv)
 {
-    float inHeight = sampleTex_blur2(uv).r;
+    float inHeight = sampleTex_blur0(uv).r;
 
     inHeight = pow(inHeight, u_preScalePower);
     inHeight = clamp(u_curveScale*inHeight + u_curveOffset, 0., 1.);

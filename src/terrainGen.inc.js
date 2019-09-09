@@ -78,7 +78,7 @@ let _terrainGen_renderHeightMap = (trackCanvas, uniforms) => {
         s = ~~(2048/2);
         mipStack[i].r(s,s);
     }
-    return gfx_downSample(framebuffer,5,mipStack);
+    return gfx_downSample(framebuffer,3,mipStack);
 };
 
 let terrainGen_loadTrackCanvasFromBlob = bytes => {
