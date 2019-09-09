@@ -17,6 +17,7 @@ let state_lerpPlayerStates = (a, b, t) => {
             $yaw: vec3_lerp([prev.$yaw], [s.$yaw], t)[0],
             $pitch: vec3_lerp([prev.$pitch], [s.$pitch], t)[0],
             $roll: vec3_lerp([prev.$roll], [s.$roll], t)[0],
+            $killCam: s.$killCam,
         });
     });
 
@@ -54,6 +55,7 @@ let state_PLAYER_SHARED_PROPS = [
     '$yaw',
     '$pitch',
     '$roll',
+    '$killCam',
 ];
 
 let state_createPlayer = ($socket, $id) => ({
@@ -65,6 +67,7 @@ let state_createPlayer = ($socket, $id) => ({
     $yaw: 0,
     $pitch: 0,
     $roll: 0,
+    $killCam: 0,
 
     $rollVel: 0,
     $pitchVel: 0,
@@ -82,13 +85,6 @@ let state_update = rootState => {
     rootState.$playerStates.forEach(p => {
         state_updatePlayer(p);
     });
-};
-
-let _velToYawPitch = vel => {
-    let normVel = vec3_normalize(vel);
-    let pitch = Math.PI/2 - Math.acos(vec3_dot(normVel, [0,1,0]));
-    let yaw = Math.atan2(-vel[0], -vel[2]);
-    return [yaw, pitch];
 };
 
 let state_updatePlayer = playerState => {
@@ -130,22 +126,14 @@ let state_updatePlayer = playerState => {
 
     playerState.$position = vec3_plus(playerState.$position, velocity);
 
-
     if (collision_sampleHeightMap(playerState.$position[0], playerState.$position[2]) > playerState.$position[1]) {
         let normal = collision_sampleWorldNormal(playerState.$position[0], playerState.$position[2]);
-        let normalStep = normal.map(x => G_TERRAIN_UPLOAD_RESOLUTION / G_TERRAIN_WORLDSPACE_SIZE);
-
-    //  while (collision_sampleHeightMap(playerState.$position[0], playerState.$position[2]) > playerState.$position[1]) {
-    //      playerState.$position = vec3_plus(playerState.$position, normalStep);
-    //  }
 
         if (vec3_dot(velocity, normal) <= 0) {
-            let newVel = vec3_reflect(velocity, normal);
-
-            let zzz = _velToYawPitch(newVel);
-
-            playerState.$yaw = zzz[0];
-            playerState.$pitch = zzz[1];
+            let newVel = vec3_reflect(velocity, normal, 1);
+            let normVel = vec3_normalize(newVel);
+            playerState.$yaw = Math.atan2(-newVel[0], -newVel[2]);
+            playerState.$pitch = Math.PI/2 - Math.acos(vec3_dot(normVel, [0,1,0]));
 
             playerState.$yawVel = 0;
             playerState.$pitchVel = 0;
