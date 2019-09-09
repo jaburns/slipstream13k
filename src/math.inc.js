@@ -7,14 +7,19 @@ let vec3_plus = (a, b) => a.map((x,i)=>x+b[i]);
 let vec3_minus = (a, b) => a.map((x,i)=>x-b[i]);
 let vec3_lerp = (a, b, t) => a.map((x,i)=> x + t*(b[i]-x));
 
-let math_clamp = (a,b,x) => x<a?a:x>b?b:x;
+let math_clamp = (a, b, x) => x<a?a:x>b?b:x;
 let math_clamp01 = x => math_clamp(0,1,x);
+
+let vec3_dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 
 let vec3_cross = (a, b) => [
     a[1] * b[2] - a[2] * b[1],
     a[2] * b[0] - a[0] * b[2],
     a[0] * b[1] - a[1] * b[0]
 ];
+
+let vec3_reflect = (v, n) =>
+    vec3_minus(v, n.map(x=>x*2*vec3_dot(v, n)));
 
 let vec3_normalize = a => {
     let len = Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);

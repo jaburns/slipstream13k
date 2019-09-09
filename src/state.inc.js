@@ -119,12 +119,15 @@ let state_updatePlayer = playerState => {
     playerState.$yaw += G_BANK_TURN_SPEED * playerState.$roll;
 
     let orientation = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, playerState.$roll);
+    let velocity = quat_mulVec3(orientation, [0, 0, -.15]);
 
-    playerState.$position = vec3_plus(playerState.$position, quat_mulVec3(orientation, [0, 0, -.15]));
+    playerState.$position = vec3_plus(playerState.$position, velocity);
 
     if (collision_sampleHeightMap(playerState.$position[0], playerState.$position[2]) > playerState.$position[1]) {
         let normal = collision_sampleWorldNormal(playerState.$position[0], playerState.$position[2]);
         playerState.$position = vec3_plus(playerState.$position, normal);
+
+        // TODO vec3_reflect(velocity, normal) and then rebuild yaw and pitch from that vector
             //[0,G_TERRAIN_WORLDSPACE_HEIGHT * 2,G_TERRAIN_WORLDSPACE_SIZE];
     }
 };
