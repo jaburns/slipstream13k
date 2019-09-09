@@ -17,6 +17,9 @@ let state_lerpPlayerStates = (a, b, t) => {
             $yaw: vec3_lerp([prev.$yaw], [s.$yaw], t)[0],
             $pitch: vec3_lerp([prev.$pitch], [s.$pitch], t)[0],
             $roll: vec3_lerp([prev.$roll], [s.$roll], t)[0],
+
+            $camPos: vec3_lerp(prev.$camPos, s.$camPos, t), 
+            $camRot: quat_slerp(prev.$camRot, s.$camRot, t), 
         });
     });
 
@@ -54,6 +57,9 @@ let state_PLAYER_SHARED_PROPS = [
     '$yaw',
     '$pitch',
     '$roll',
+    
+    '$camPos',
+    '$camRot',
 ];
 
 let state_createPlayer = ($socket, $id) => ({
@@ -65,6 +71,9 @@ let state_createPlayer = ($socket, $id) => ({
     $yaw: 0,
     $pitch: 0,
     $roll: 0,
+
+    $camPos: [0,G_TERRAIN_WORLDSPACE_HEIGHT * 2,G_TERRAIN_WORLDSPACE_SIZE],
+    $camRot: [0,0,0,1],
 
     $rollVel: 0,
     $pitchVel: 0,
@@ -82,13 +91,6 @@ let state_update = rootState => {
     rootState.$playerStates.forEach(p => {
         state_updatePlayer(p);
     });
-};
-
-let _velToYawPitch = vel => {
-    let normVel = vec3_normalize(vel);
-    let pitch = Math.PI/2 - Math.acos(vec3_dot(normVel, [0,1,0]));
-    let yaw = Math.atan2(-vel[0], -vel[2]);
-    return [yaw, pitch];
 };
 
 let state_updatePlayer = playerState => {
@@ -111,9 +113,11 @@ let state_updatePlayer = playerState => {
     // Bank controls
 
     if (playerState.$keysDown.indexOf(G_KEYCODE_LEFT) >= 0) {
+        if (playerState.$rollVel < 0) playerState.$rollVel = 0;
         playerState.$rollVel += G_ROLL_ACCEL;
         if (playerState.$rollVel > G_ROLL_MAX_VEL) playerState.$rollVel = G_ROLL_MAX_VEL;
     } else if (playerState.$keysDown.indexOf(G_KEYCODE_RIGHT) >= 0) {
+        if (playerState.$rollVel > 0) playerState.$rollVel = 0;
         playerState.$rollVel -= G_ROLL_ACCEL;
         if (playerState.$rollVel < -G_ROLL_MAX_VEL) playerState.$rollVel = -G_ROLL_MAX_VEL;
     }  else {
@@ -122,7 +126,7 @@ let state_updatePlayer = playerState => {
     playerState.$roll += playerState.$rollVel;
     if (playerState.$roll >  G_ROLL_MAX) playerState.$roll =  G_ROLL_MAX;
     if (playerState.$roll < -G_ROLL_MAX) playerState.$roll = -G_ROLL_MAX;
-
+    
     playerState.$yaw += G_BANK_TURN_SPEED * playerState.$roll;
 
     let orientation = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, playerState.$roll);
@@ -132,16 +136,21 @@ let state_updatePlayer = playerState => {
 
     if (collision_sampleHeightMap(playerState.$position[0], playerState.$position[2]) > playerState.$position[1]) {
         let normal = collision_sampleWorldNormal(playerState.$position[0], playerState.$position[2]);
+
         if (vec3_dot(velocity, normal) <= 0) {
-            let newVel = vec3_reflect(velocity, normal);
-
-            let zzz = _velToYawPitch(newVel);
-
-            playerState.$yaw = zzz[0];
-            playerState.$pitch = zzz[1];
+            let newVel = vec3_reflect(velocity, normal, 1);
+            let normVel = vec3_normalize(newVel);
+            playerState.$yaw = Math.atan2(-newVel[0], -newVel[2]);
+            playerState.$pitch = Math.PI/2 - Math.acos(vec3_dot(normVel, [0,1,0]));
 
             playerState.$yawVel = 0;
             playerState.$pitchVel = 0;
         }
     }
+
+    let cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, 0);
+    let cameraSeekPos = vec3_plus(playerState.$position, quat_mulVec3(cameraSeekRot, [0,.5,-2]));
+
+    playerState.$camPos = vec3_lerp(playerState.$camPos, cameraSeekPos, 0.04);
+    playerState.$camRot = quat_slerp(playerState.$camRot, cameraSeekRot, 0.2);
 };

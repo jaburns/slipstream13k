@@ -18,13 +18,13 @@ let collision_sampleHeightMap = (x, z) => {
 let collision_sampleWorldNormal = (x, z) => {
     if (!collision_rawData) return [0,1,0];
 
-    let offset = G_TERRAIN_UPLOAD_RESOLUTION / G_TERRAIN_WORLDSPACE_SIZE;
+    let offset = G_TERRAIN_WORLDSPACE_SIZE / G_TERRAIN_UPLOAD_RESOLUTION;
     let h0 = collision_sampleHeightMap(x,z);
-    let hx = collision_sampleHeightMap(x + offset, z);
-    let hz = collision_sampleHeightMap(x, z + offset);
+    let hx = collision_sampleHeightMap(x+offset,z);
+    let hz = collision_sampleHeightMap(x,z+offset);
 
-    let vx = vec3_normalize([offset, hx - h0, 0]);
-    let vz = vec3_normalize([0, hz - h0, offset]);
+    let vx = [offset, hx - h0,      0];
+    let vz = [     0, hz - h0, offset];
 
-    return vec3_cross(vz, vx);
+    return vec3_normalize(vec3_cross(vz, vx));
 };

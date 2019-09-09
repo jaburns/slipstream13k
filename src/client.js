@@ -77,11 +77,8 @@ let updateSceneFromGameState = state => {
         obj.$transform.s = [G_SHIP_SCALE,G_SHIP_SCALE,-G_SHIP_SCALE];
 
         if (state.$myId == p.$id) {
-            let cameraSeekRot = quat_fromYawPitchRoll(p.$yaw, p.$pitch, 0);
-            let cameraSeekPos = vec3_plus(p.$position, quat_mulVec3(cameraSeekRot, [0,.5,-3.5]));
-
-            scene.$cameraTransform.p = vec3_lerp(scene.$cameraTransform.p, cameraSeekPos, 0.02);
-            scene.$cameraTransform.r = quat_slerp(scene.$cameraTransform.r, cameraSeekRot, 0.1);
+            scene.$cameraTransform.p = p.$camPos;
+            scene.$cameraTransform.r = p.$camRot;
         }
     });
 };

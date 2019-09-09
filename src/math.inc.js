@@ -18,8 +18,8 @@ let vec3_cross = (a, b) => [
     a[0] * b[1] - a[1] * b[0]
 ];
 
-let vec3_reflect = (v, n) =>
-    vec3_minus(v, n.map(x=>x*2*vec3_dot(v, n)));
+let vec3_reflect = (v, n, elasticity) => // elasticity: 1: no bounce -> 2: full bounce
+    vec3_minus(v, n.map(x=>x*elasticity*vec3_dot(v, n)));
 
 let vec3_length = a => Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
 let vec3_normalize = a => a.map(x=>x/vec3_length(a));
@@ -51,6 +51,8 @@ let quat_fromYawPitchRoll = (yaw, pitch, roll) => {
     );
 };
 
+let quat_slerp = vec3_lerp;
+/*
 let quat_slerp = (a, b, t) => {
     let bx = b[0], by = b[1], bz = b[2], bw = b[3];
     let omega, cosom, sinom, scale0, scale1;
@@ -81,6 +83,7 @@ let quat_slerp = (a, b, t) => {
         scale0 * a[3] + scale1 * bw
     ];
 };
+*/
 
 let quat_mulVec3 = (q, v) => mat4_mulNormal(mat4_fromRotationTranslationScale(q,[0,0,0],[1,1,1]), v);
 
