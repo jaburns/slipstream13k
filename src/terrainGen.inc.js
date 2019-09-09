@@ -72,8 +72,13 @@ let _terrainGen_renderHeightMap = (trackCanvas, uniforms) => {
             }
         }
     });
-
-    return framebuffer;
+    mipStack = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()];
+    s = 2048;
+    for(i=0;i<mipStack.length;i++){
+        s = ~~(2048/2);
+        mipStack[i].r(s,s);
+    }
+    return gfx_downSample(framebuffer,5,mipStack);
 };
 
 let terrainGen_loadTrackCanvasFromBlob = bytes => {
