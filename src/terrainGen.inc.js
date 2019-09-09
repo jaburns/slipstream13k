@@ -102,7 +102,6 @@ let terrainGen_loadTrackCanvasFromBlob = bytes => {
 
 let chunksPerMapSide = 5;
 let verticesPerChunkSide = 256;
-let worldSpaceMapSize = 200;
 
 let _terrainGen_getChunkMesh = (chunkX, chunkZ) => {
     let chunkUV = [chunkX / chunksPerMapSide, chunkZ / chunksPerMapSide];
@@ -117,9 +116,9 @@ let _terrainGen_getChunkMesh = (chunkX, chunkZ) => {
             chunkUV[1] + vz / (verticesPerChunkSide - 1) / chunksPerMapSide,
         ];
 
-        verts.push(uv[0] * worldSpaceMapSize - worldSpaceMapSize / 2);
-        verts.push(-15);
-        verts.push(uv[1] * worldSpaceMapSize - worldSpaceMapSize / 2);
+        verts.push(uv[0] * G_TERRAIN_WORLDSPACE_SIZE - G_TERRAIN_WORLDSPACE_SIZE / 2);
+        verts.push(0);
+        verts.push(uv[1] * G_TERRAIN_WORLDSPACE_SIZE - G_TERRAIN_WORLDSPACE_SIZE / 2);
     }
 
     for (var x = 0; x < verticesPerChunkSide - 1; x++)

@@ -5,7 +5,9 @@ varying vec3 v_position;
 varying vec4 v_pos;
 varying vec4 v_pos_old;
 
-varying float v_height;
+varying vec2 v_uv;
+
+uniform sampler2D u_objTex;
 
 void main()
 {
@@ -15,5 +17,9 @@ void main()
 
     vec2 diff = (tpos_old*0.5+0.5)-(tpos*0.5+0.5);
 
-    gl_FragColor = vec4(0.5*v_height, diff, 1);
+    vec4 terrainLookup = texture2D(u_objTex, v_uv);
+    float height = terrainLookup.r;
+    float shadow = terrainLookup.g;
+
+    gl_FragColor = vec4(shadow * 0.5*height, diff, 1);
 }

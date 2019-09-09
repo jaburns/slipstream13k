@@ -53,8 +53,6 @@ let uniformSliderPair = label => {
 
 let shader = gfx_compileProgram(fullQuad_vert, terrainMap_frag);
 
-let T = (new Date).getTime();
-
 let update = () => {
     C.width = C.height = 1024;
     gl.viewport(0, 0, 1024, 1024);
@@ -72,7 +70,6 @@ let update = () => {
         gl.uniform3fv(gl.getUniformLocation(shader, 'u_noise3'), uniformSliderPair('u_noise3'));
         gl.uniform1f (gl.getUniformLocation(shader, 'u_finalScale'), uniformSlider('u_finalScale'));
         gl.uniform1f (gl.getUniformLocation(shader, 'u_finalPower'), uniformSlider('u_finalPower'));
-        gl.uniform1f (gl.getUniformLocation(shader, 'u_testTime'), ((new Date).getTime()-T) / 1000);
     });
 
     requestAnimationFrame(update);

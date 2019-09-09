@@ -15,12 +15,10 @@ uniform float u_finalScale;
 uniform float u_finalPower;
 
 
-uniform float u_testTime;
-
 varying vec2 v_uv;
 
 
-const float RESOLUTION = 128.0;
+const float RESOLUTION = 1024.0;
 
 
 vec4 sampleTex_blur0(vec2 uv)
@@ -32,9 +30,9 @@ vec4 sampleTex_blur1(vec2 uv)
 {
     vec4 color = vec4(0.0);
     vec2 off1 = vec2(1.3, 0);
-    color += sampleTex_blur0(uv) * 0.29411764705882354;
-    color += sampleTex_blur0(uv + (off1 / RESOLUTION)) * 0.35294117647058826;
-    color += sampleTex_blur0(uv - (off1 / RESOLUTION)) * 0.35294117647058826;
+    color += sampleTex_blur0(uv) * 0.29;
+    color += sampleTex_blur0(uv + (off1 / RESOLUTION)) * 0.35;
+    color += sampleTex_blur0(uv - (off1 / RESOLUTION)) * 0.35;
     return color; 
 }
 
@@ -42,9 +40,9 @@ vec4 sampleTex_blur2(vec2 uv)
 {
     vec4 color = vec4(0.0);
     vec2 off1 = vec2(0, 1.3);
-    color += sampleTex_blur1(uv) * 0.29411764705882354;
-    color += sampleTex_blur1(uv + (off1 / RESOLUTION)) * 0.35294117647058826;
-    color += sampleTex_blur1(uv - (off1 / RESOLUTION)) * 0.35294117647058826;
+    color += sampleTex_blur1(uv) * 0.29;
+    color += sampleTex_blur1(uv + (off1 / RESOLUTION)) * 0.35;
+    color += sampleTex_blur1(uv - (off1 / RESOLUTION)) * 0.35;
     return color; 
 }
 
@@ -70,11 +68,7 @@ void main()
 {
     float height = getHeight(v_uv);
 
-    vec3 directionalLight = normalize(vec3(sin(u_testTime), -2, sin(u_testTime)));
-
-    //vec3 directionalLight = normalize(vec3(-1, -2, 1));
-    float G_TERRAIN_WORLDSPACE_HEIGHT =  40.0;
-    float G_TERRAIN_WORLDSPACE_SIZE   = 200.0;
+    vec3 directionalLight = normalize(vec3(0, -1, 2));
 
     vec3 worldMarch = vec3(
         G_TERRAIN_WORLDSPACE_SIZE * v_uv.x,
@@ -89,12 +83,12 @@ void main()
         worldMarch += worldStep;
         float marchHeight = G_TERRAIN_WORLDSPACE_HEIGHT * getHeight(worldMarch.xz / G_TERRAIN_WORLDSPACE_SIZE);
         if (marchHeight > worldMarch.y) {
-            shadow = 0.5;
+            shadow = 0.0;
             break;
         }
     }
 
-    gl_FragColor = shadow*vec4(height, height, height, 1) + (1.0-shadow)*vec4(0.5,0.0,0.0,0.0);
+    gl_FragColor = vec4(height, shadow, 0, 1);
 }
 
 

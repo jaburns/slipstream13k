@@ -7,11 +7,30 @@
     "G_MSG_REQUEST_TERRAIN": 3,
     "G_MSG_UPLOAD_TERRAIN":  4,
 
+    "G_TERRAIN_WORLDSPACE_HEIGHT": 10,
+    "G_TERRAIN_WORLDSPACE_SIZE": 100,
+
     "G_KEYCODE_SPACE": 32,
     "G_KEYCODE_LEFT":  37, 
     "G_KEYCODE_UP":    38, 
     "G_KEYCODE_RIGHT": 39, 
     "G_KEYCODE_DOWN":  40,
+
+    "G_SHIP_SCALE": 0.2,
+
+
+    "G_PITCH_ACCEL": 0.003,
+    "G_PITCH_MAX_VEL": 0.03,
+    "G_PITCH_RESTORE": 0.9,
+    "G_PITCH_MAX": 1.0,
+
+    "G_ROLL_ACCEL": 0.005,
+    "G_ROLL_MAX_VEL": 0.05,
+    "G_ROLL_RESTORE": 0.93,
+    "G_ROLL_MAX": 1.0,
+
+    "G_BANK_TURN_SPEED": 0.04,
+
 
     "G_MAX_PREFAB_DEPTH": 10,
 

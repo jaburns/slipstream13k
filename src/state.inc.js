@@ -16,6 +16,7 @@ let state_lerpPlayerStates = (a, b, t) => {
             $position: vec3_lerp(prev.$position, s.$position, t), 
             $yaw: vec3_lerp([prev.$yaw], [s.$yaw], t)[0],
             $pitch: vec3_lerp([prev.$pitch], [s.$pitch], t)[0],
+            $roll: vec3_lerp([prev.$roll], [s.$roll], t)[0],
         });
     });
 
@@ -52,6 +53,7 @@ let state_PLAYER_SHARED_PROPS = [
     '$position',
     '$yaw',
     '$pitch',
+    '$roll',
 ];
 
 let state_createPlayer = ($socket, $id) => ({
@@ -59,9 +61,13 @@ let state_createPlayer = ($socket, $id) => ({
     $keysDown: [],
 
     $id,
-    $position: [Math.random(), Math.random(), 0],
+    $position: [0,0,0],
     $yaw: 0,
     $pitch: 0,
+    $roll: 0,
+
+    $rollVel: 0,
+    $pitchVel: 0,
 });
 
 let state_emitToAllPlayers = rootState => {
@@ -79,11 +85,40 @@ let state_update = rootState => {
 };
 
 let state_updatePlayer = playerState => {
-    if (playerState.$keysDown.indexOf(G_KEYCODE_UP)    >= 0) playerState.$pitch += 0.05;
-    if (playerState.$keysDown.indexOf(G_KEYCODE_DOWN)  >= 0) playerState.$pitch -= 0.05;
-    if (playerState.$keysDown.indexOf(G_KEYCODE_LEFT)  >= 0) playerState.$yaw += 0.05;
-    if (playerState.$keysDown.indexOf(G_KEYCODE_RIGHT) >= 0) playerState.$yaw -= 0.05;
 
-    let rotation = quat_fromYawPitch(playerState.$yaw, playerState.$pitch);
-    playerState.$position = vec3_plus(playerState.$position, quat_mulVec3(rotation, [0,0,-0.5]));
+    // Pitch controls
+
+    if (playerState.$keysDown.indexOf(G_KEYCODE_UP) >= 0) {
+        playerState.$pitchVel += G_PITCH_ACCEL;
+        if (playerState.$pitchVel > G_PITCH_MAX_VEL) playerState.$pitchVel = G_PITCH_MAX_VEL;
+    } else if (playerState.$keysDown.indexOf(G_KEYCODE_DOWN) >= 0) {
+        playerState.$pitchVel -= G_PITCH_ACCEL;
+        if (playerState.$pitchVel < -G_PITCH_MAX_VEL) playerState.$pitchVel = -G_PITCH_MAX_VEL;
+    }  else {
+        playerState.$pitchVel *= G_PITCH_RESTORE;
+    }
+    playerState.$pitch += playerState.$pitchVel;
+    if (playerState.$pitch >  G_PITCH_MAX) playerState.$pitch =  G_PITCH_MAX;
+    if (playerState.$pitch < -G_PITCH_MAX) playerState.$pitch = -G_PITCH_MAX;
+
+    // Bank controls
+
+    if (playerState.$keysDown.indexOf(G_KEYCODE_LEFT) >= 0) {
+        playerState.$rollVel += G_ROLL_ACCEL;
+        if (playerState.$rollVel > G_ROLL_MAX_VEL) playerState.$rollVel = G_ROLL_MAX_VEL;
+    } else if (playerState.$keysDown.indexOf(G_KEYCODE_RIGHT) >= 0) {
+        playerState.$rollVel -= G_ROLL_ACCEL;
+        if (playerState.$rollVel < -G_ROLL_MAX_VEL) playerState.$rollVel = -G_ROLL_MAX_VEL;
+    }  else {
+        playerState.$rollVel = playerState.$roll * (G_ROLL_RESTORE - 1);
+    }
+    playerState.$roll += playerState.$rollVel;
+    if (playerState.$roll >  G_ROLL_MAX) playerState.$roll =  G_ROLL_MAX;
+    if (playerState.$roll < -G_ROLL_MAX) playerState.$roll = -G_ROLL_MAX;
+
+    playerState.$yaw += G_BANK_TURN_SPEED * playerState.$roll;
+
+    let orientation = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, playerState.$roll);
+
+    playerState.$position = vec3_plus(playerState.$position, quat_mulVec3(orientation, [0, 0, -.15]));
 };

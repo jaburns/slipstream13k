@@ -138,6 +138,12 @@ const buildShaderIncludeFile = () => {
 
     fileContents = lines.join('\n');
 
+    for (let k in constants) {
+        let val = constants[k].toString();
+        if (val.indexOf('.') < 0) val = val + '.';
+        fileContents = fileContents.replace(new RegExp(k, 'g'), val);
+    }
+
     return fileContents;
 };
 

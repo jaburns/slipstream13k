@@ -21,6 +21,11 @@ public class TerrainGen3 : MonoBehaviour
 
 #pragma warning restore 0649
 
+    void Start()
+    {
+        doRun();
+    }
+
     void Update()
     {
         if (run) { run = false; doRun(); }

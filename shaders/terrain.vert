@@ -19,16 +19,16 @@ varying vec3 v_position;
 varying vec4 v_pos;
 varying vec4 v_pos_old;
 
-varying float v_height;
+varying vec2 v_uv;
 
 uniform sampler2D u_objTex;
 
 void main()
 {
     vec3 position = a_position;
-    vec2 uv = a_position.xz / 200. + .5;
-    v_height = texture2DLod(u_objTex, uv, 0.).r;
-    position.y += 40. * v_height;
+    v_uv = a_position.xz / G_TERRAIN_WORLDSPACE_SIZE + .5;
+    vec4 terrainLookup = texture2DLod(u_objTex, v_uv, 0.);
+    position.y += G_TERRAIN_WORLDSPACE_HEIGHT * terrainLookup.r;
 
     vec4 worldPos = u_model * vec4(position, 1);
     gl_Position = u_mvp * vec4(position, 1);
