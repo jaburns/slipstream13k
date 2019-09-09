@@ -29,7 +29,14 @@ vec3 getPosition(vec2 uv,sampler2D tex) {
     return vec3((uv.xy * u_proj.xy + u_proj.zw) * -depth, -depth);
 }
 
-#include "linearDepth.glsl"
+float linearDepth(float depthSample)
+{
+    float zNear = 0.2;
+    float zFar = 100.0;
+    depthSample = 2.0 * depthSample - 1.0;
+    float zLinear = 2.0 * zNear * zFar / (zFar + zNear - depthSample * (zFar - zNear));
+    return zLinear/zFar;
+}
 
 float rand(vec2 co)
 {

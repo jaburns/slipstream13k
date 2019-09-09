@@ -7,6 +7,8 @@ let shaderVarNames = [];
 shell.find('src')
     .filter(x => x.indexOf('/') >= 0)
     .forEach(x => {
+        if (x.indexOf('shaders.gen.js') >= 0) return;
+
         let contents = fs.readFileSync(x, 'utf8');
 
         let matches = contents.match(/[0-9a-zA-Z_]+_frag/g);
