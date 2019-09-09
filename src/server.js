@@ -3,11 +3,7 @@
 
 let state = state_createRoot();
 let newPlayerId = 0;
-let terrainData;
 let requestedTerrainData = 0;
-
-let parseUploadedTerrainData = data => {
-};
 
 setInterval(() => {
     state_update(state);
