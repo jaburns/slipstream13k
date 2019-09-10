@@ -5,7 +5,6 @@ gl.getExtension('OES_standard_derivatives');
 gl.getExtension('WEBGL_depth_texture');
 gl.getExtension("OES_texture_half_float");
 gl.clearColor(0, 0, 0, 1);
-gl.enable(gl.CULL_FACE);
 
 //__include soundbox-player.inc.js
 //__include song.inc.js
@@ -48,6 +47,7 @@ let scene = {
     $objects: terrainStuff.meshes.map($mesh => ({
         $transform: Transform_create(),
         $mesh,
+        $cull: 1,
         $prog: terrainProg,
         $tex: terrainStuff.heightMapTexture
     }))
@@ -59,6 +59,7 @@ let getPlayerObject = id => {
         playerObjectsById[id] = {
             $transform: Transform_create(),
             $mesh: meshes[G_MODEL_INDEX_ShipGameObject],
+            $cull: 0,
             $prog: cubeProg
         };
 

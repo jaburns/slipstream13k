@@ -4,6 +4,7 @@
 
 gl.enable(gl.DEPTH_TEST);
 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+gl.enable(gl.CULL_FACE);
 
 let blobs = __binaryBlobs;
 

@@ -181,6 +181,7 @@ let meshLoader_loadMeshesBlob = bytes => {
                     norms = norms.concat(vec3_bufferMap(mesh.n, x => mat4_mulNormal(newMatrix, x)));
                     tris = tris.concat(mesh.t.map(x => x + oldVcount));
 
+                    // TODO flip triangle winding for meshes with an odd number of negative scale dimensions
                     // TODO Write child.m (material index) to a buffer for each vertex
                 }
             });

@@ -75,6 +75,9 @@ let renderer_create = () => {
         gl.depthMask(true);
 
         scene.$objects.forEach(obj => {
+            if (obj.$cull) gl.enable(gl.CULL_FACE);
+            else gl.disable(gl.CULL_FACE);
+
             gl.useProgram(obj.$prog);
 
             let modelMatrix = Transform_toMatrix(obj.$transform);
