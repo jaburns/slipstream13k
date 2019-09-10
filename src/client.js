@@ -24,7 +24,7 @@ let blobs = __binaryBlobs
   , lastReceiveState
   , lastState
   , currentState
-  , soundEffect
+  , soundEffects = []
   , renderer = renderer_create()
   , resizeFunc = () => {
         let w = innerWidth, h = innerHeight;
@@ -32,6 +32,15 @@ let blobs = __binaryBlobs
         C.height = h;
         renderer.resize(w, h);
     };
+
+
+sbPlay(song);
+[
+    // "G_SOUNDID_HIT_WALL": 0,
+    __includeSongData({songData:[{i:[0,255,116,1,0,255,120,0,1,127,4,6,35,0,0,0,0,0,0,2,14,0,10,32,0,0,0,0],p:[1],c:[{n:[140],f:[]}]}],rowLen:5513,patternLen:32,endPattern:0,numChannels:1}),
+]
+.map((x,i) => sbPlay(x, x=>soundEffects[i]=x));
+
 
 C.style.left = C.style.top = 0;
 onresize = resizeFunc;
@@ -64,6 +73,7 @@ let connect = () => {
         socket.on(G_MSG_STATE_UPDATE, s => {
             lastState = currentState;
             currentState = s;
+            s.$sounds.map(i => soundEffects[i] && soundEffects[i]());
             lastReceiveState = Date.now();
         });
 
@@ -115,10 +125,5 @@ let update = () => {
     requestAnimationFrame(update);
 };
 update();
-
-let exampleSFX=__includeSongData({songData:[{i:[0,255,116,1,0,255,120,0,1,127,4,6,35,0,0,0,0,0,0,2,14,0,10,32,0,0,0,0],p:[1],c:[{n:[140],f:[]}]}],rowLen:5513,patternLen:32,endPattern:0,numChannels:1});
-sbPlay(exampleSFX, x => soundEffect = x);
-sbPlay(song);
-onclick = soundEffect
 
 connect();

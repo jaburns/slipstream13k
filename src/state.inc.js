@@ -43,14 +43,9 @@ let filterObject = (obj, props) => {
 
 let state_createRoot = () => ({
     $myId: 0,
+    $sounds: [],
     $raceCountdown: 10 * G_TICK_MILLIS,
     $playerStates: [],
-});
-
-let state_convertToPacket = rootState => ({
-    $myId: 0,
-    $raceCountdown: rootState.$raceCountdown,
-    $playerStates: rootState.$playerStates.map(x => filterObject(x, state_PLAYER_SHARED_PROPS))
 });
 
 let state_PLAYER_SHARED_PROPS = [
@@ -82,6 +77,8 @@ let state_playerJoin = (state, $socket, $id) => {
         $rollVel: 0,
         $pitchVel: 0,
         $velocity: [0,0,0],
+
+        $sounds: [],
     };
 
     state.$playerStates.push(newPlayer);
@@ -93,14 +90,21 @@ let state_playerLeave = (state, player) => {
 };
 
 let state_emitToAllPlayers = rootState => {
-    let packet = state_convertToPacket(rootState);
+    let packet = {
+        $raceCountdown: rootState.$raceCountdown,
+        $playerStates: rootState.$playerStates.map(x => filterObject(x, state_PLAYER_SHARED_PROPS))
+    };
+
     rootState.$playerStates.forEach(p => {
         packet.$myId = p.$id;
+        packet.$sounds = rootState.$sounds.concat(p.$sounds);
         p.$socket.emit(G_MSG_STATE_UPDATE, packet);
     });
 };
 
 let state_update = rootState => {
+    rootState.$sounds = [];
+
     if (rootState.$raceCountdown > 0) {
         rootState.$raceCountdown--;
 
@@ -136,6 +140,7 @@ let state_updatePlayerOnDeck = playerState => {
 };
 
 let state_updatePlayerRacing = playerState => {
+    playerState.$sounds = [];
 
     // Pitch controls
 
@@ -189,6 +194,7 @@ let state_updatePlayerRacing = playerState => {
             playerState.$pitch = G_CEILING_HIT_PITCH_RESET;
         }
         playerState.$velocity = col.map(x=> x * G_COLLISION_SPEED_LOSS);
+        playerState.$sounds.push(G_SOUNDID_HIT_WALL);
         // TODO affect $speed, and if you're flipping around don't do that. Just get negative speed
         // Maybe orientation should be decoupled from actual speed so you can bounce without changing orientation.
 
