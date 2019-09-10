@@ -19,8 +19,8 @@ gl.clearColor(0, 0, 0, 1);
 
 //__include renderer.inc.js
 
-let socket = io()
-  , blobs = __binaryBlobs
+let blobs = __binaryBlobs
+  , mapHandles = [].slice.call(blobs[G_MAP_BLOB]).map(x=>x/255)
   , lastReceiveState
   , lastState
   , currentState
@@ -39,7 +39,7 @@ resizeFunc();
 
 let terrainProg = gfx_compileProgram(terrain_vert,terrain_frag)
   , cubeProg = gfx_compileProgram(cube_vert, cube_frag)
-  , terrainStuff = terrainGen_getRenderer(blobs[G_MAP_BLOB])
+  , terrainStuff = terrainGen_getRenderer(mapHandles)
   , meshes = meshLoader_loadMeshesBlob(blobs[G_MODELS_BLOB])
 
 let scene = {
@@ -53,6 +53,28 @@ let scene = {
     }))
 };
 let playerObjectsById = {};
+
+let connect = () => {
+    let socket = io();
+
+    socket.on("connect", () => {
+        onkeydown = k => socket.emit(G_MSG_KEY_DOWN, k.keyCode);
+        onkeyup = k => socket.emit(G_MSG_KEY_UP, k.keyCode);
+
+        socket.on(G_MSG_STATE_UPDATE, s => {
+            lastState = currentState;
+            currentState = s;
+            lastReceiveState = Date.now();
+        });
+
+        socket.on(G_MSG_REQUEST_TERRAIN, () => {
+            socket.emit(G_MSG_UPLOAD_TERRAIN, {
+                $terrain: terrainGen_serializeHeightMap(terrainStuff.heightMapTexture),
+                $mapHandles: mapHandles,
+            });
+        });
+    });
+};
 
 let getPlayerObject = id => {
     if (!(id in playerObjectsById)) {
@@ -84,54 +106,19 @@ let updateSceneFromGameState = state => {
     });
 };
 
-
-
 let update = () => {
     if (lastState && currentState) {
         let stateNow = state_lerp(lastState, currentState, (Date.now() - lastReceiveState) / G_TICK_MILLIS);
         updateSceneFromGameState(stateNow);
-        renderer.render(scene);
     }
+    renderer.render(scene);
     requestAnimationFrame(update);
 };
 update();
-
-
 
 let exampleSFX=__includeSongData({songData:[{i:[0,255,116,1,0,255,120,0,1,127,4,6,35,0,0,0,0,0,0,2,14,0,10,32,0,0,0,0],p:[1],c:[{n:[140],f:[]}]}],rowLen:5513,patternLen:32,endPattern:0,numChannels:1});
 sbPlay(exampleSFX, x => soundEffect = x);
 sbPlay(song);
 onclick = soundEffect
 
-
-socket.on("connect", () => {
-    onkeydown = k => socket.emit(G_MSG_KEY_DOWN, k.keyCode);
-    onkeyup = k => socket.emit(G_MSG_KEY_UP, k.keyCode);
-
-    socket.on(G_MSG_STATE_UPDATE, s => {
-        lastState = currentState;
-        currentState = s;
-        lastReceiveState = Date.now();
-    });
-
-    socket.on(G_MSG_REQUEST_TERRAIN, () => {
-        socket.emit(G_MSG_UPLOAD_TERRAIN, terrainGen_serializeHeightMap(terrainStuff.heightMapTexture));
-    });
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+connect();

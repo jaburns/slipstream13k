@@ -11,6 +11,8 @@
     "G_TERRAIN_WORLDSPACE_SIZE": 100,
 
     "G_TERRAIN_UPLOAD_RESOLUTION": 512,
+    "G_HEIGHTMAP_SIZE": 128,
+
 
     "G_KEYCODE_SPACE": 32,
     "G_KEYCODE_LEFT":  37, 
@@ -26,13 +28,18 @@
     "G_PITCH_RESTORE": 0.9,
     "G_PITCH_MAX": 1.0,
 
-    "G_ROLL_ACCEL": 0.005,
-    "G_ROLL_MAX_VEL": 0.05,
+    "G_ROLL_ACCEL": 0.004,
+    "G_ROLL_MAX_VEL": 0.06,
     "G_ROLL_RESTORE": 0.93,
-    "G_ROLL_MAX": 1.0,
+    "G_ROLL_MAX": 1.3,
 
     "G_BANK_TURN_SPEED": 0.04,
+    "G_ACCEL": 0.02,
+    "G_MAX_SPEED": 0.15,
+    "G_COLLISION_SPEED_LOSS": 0.75,
 
+    "G_CAMERA_POS_LAG": 0.2,
+    "G_CAMERA_ROT_LAG": 0.4,
 
     "G_MAX_PREFAB_DEPTH": 10,
 

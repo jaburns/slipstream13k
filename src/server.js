@@ -1,11 +1,14 @@
+//__include track.inc.js
 //__include collision.inc.js
 //__include state.inc.js
 
 let state = state_createRoot();
 let newPlayerId = 0;
 let requestedTerrainData = 0;
+let ready = 0;
 
 setInterval(() => {
+    if (!ready) return;
     state_update(state);
     state_emitToAllPlayers(state);
 }, G_TICK_MILLIS);
@@ -29,7 +32,11 @@ module.exports = socket => {
 
     if (!requestedTerrainData) {
         requestedTerrainData = 1;
-        socket.on(G_MSG_UPLOAD_TERRAIN, collision_parseUploadedData);
+        socket.on(G_MSG_UPLOAD_TERRAIN, data => {
+            collision_parseUploadedData(data.$terrain);
+            track_parseUploadedCurveHandles(data.$mapHandles);
+            ready = 1;
+        });
         socket.emit(G_MSG_REQUEST_TERRAIN);
     }
 };

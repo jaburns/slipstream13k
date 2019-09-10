@@ -48,13 +48,8 @@ let collision_test = (position, velocity) => {
     });
 
     if (normal && vec3_dot(velocity, normal) <= 0) {
-        let newVel = vec3_reflect(velocity, normal, 1);
-        let normVel = vec3_normalize(newVel);
-
-        return {
-            $yaw: Math.atan2(-newVel[0], -newVel[2]),
-            $pitch: Math.PI/2 - Math.acos(vec3_dot(normVel, [0,1,0])),
-        };
+        return vec3_reflect(velocity, normal, 1.5);
     }
+
     return 0;
 };

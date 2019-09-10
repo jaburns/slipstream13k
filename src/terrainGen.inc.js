@@ -1,16 +1,14 @@
-let HEIGHTMAP_SIZE = 128;
-
 let _terrainGen_signedDistanceFill = ctx => {
-    let data = ctx.getImageData(0, 0, HEIGHTMAP_SIZE, HEIGHTMAP_SIZE).data;
-    let outData = ctx.createImageData(HEIGHTMAP_SIZE,HEIGHTMAP_SIZE);
+    let data = ctx.getImageData(0, 0, G_HEIGHTMAP_SIZE, G_HEIGHTMAP_SIZE).data;
+    let outData = ctx.createImageData(G_HEIGHTMAP_SIZE,G_HEIGHTMAP_SIZE);
 
     let findEdgeDistance = (x, y) => {
         let candidates = [];
-        let maxRadius = HEIGHTMAP_SIZE;
+        let maxRadius = G_HEIGHTMAP_SIZE;
 
         let test = (ix, iy) => {
-            if (ix < 0 || ix >= HEIGHTMAP_SIZE || iy < 0 || iy >= HEIGHTMAP_SIZE) return false;
-            return data[4*(ix+iy*HEIGHTMAP_SIZE)] > 128;
+            if (ix < 0 || ix >= G_HEIGHTMAP_SIZE || iy < 0 || iy >= G_HEIGHTMAP_SIZE) return false;
+            return data[4*(ix+iy*G_HEIGHTMAP_SIZE)] > 128;
         };
 
         let pushTest = (ix, iy, radius) => {
@@ -28,14 +26,14 @@ let _terrainGen_signedDistanceFill = ctx => {
             pushTest(x + radius, y + o, radius);
         }
 
-        if (candidates.length < 1) return HEIGHTMAP_SIZE;
+        if (candidates.length < 1) return G_HEIGHTMAP_SIZE;
 
         candidates.sort((a,b)=>a-b);
         return Math.sqrt(candidates[0]);
     };
 
-    for (let x = 0; x < HEIGHTMAP_SIZE; ++x)
-    for (let y = 0; y < HEIGHTMAP_SIZE; ++y)
+    for (let x = 0; x < G_HEIGHTMAP_SIZE; ++x)
+    for (let y = 0; y < G_HEIGHTMAP_SIZE; ++y)
     {
         var dist = findEdgeDistance(x, y);
         var color = 255*math_clamp01(dist / 32);
@@ -44,7 +42,7 @@ let _terrainGen_signedDistanceFill = ctx => {
         if (color > 255) color = 255;
 
         [0,1,2,3].map(i=>
-            outData.data[4*(x+y*HEIGHTMAP_SIZE)+i] = i<3?color:255
+            outData.data[4*(x+y*G_HEIGHTMAP_SIZE)+i] = i<3?color:255
         );
     }
 
@@ -81,16 +79,16 @@ let _terrainGen_renderHeightMap = (trackCanvas, uniforms) => {
     return gfx_downSample(framebuffer,3,mipStack);
 };
 
-let terrainGen_loadTrackCanvasFromBlob = bytes => {
+let terrainGen_loadTrackCanvasFromBlob = mapHandles => {
     let canvas = document.createElement('canvas');
-    canvas.width = canvas.height = HEIGHTMAP_SIZE;
+    canvas.width = canvas.height = G_HEIGHTMAP_SIZE;
 
     let ctx = canvas.getContext('2d');
     ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, HEIGHTMAP_SIZE, HEIGHTMAP_SIZE);
+    ctx.fillRect(0, 0, G_HEIGHTMAP_SIZE, G_HEIGHTMAP_SIZE);
     ctx.strokeStyle = '#fff';
 
-    let pts = [].slice.call(bytes).map(x => x/255*HEIGHTMAP_SIZE);
+    let pts = mapHandles.map(x => x*G_HEIGHTMAP_SIZE);
 
     for (let i = 0; i < pts.length; i += 6) {
         let j = (i + 6) % pts.length;
@@ -151,8 +149,8 @@ let _terrainGen_getChunkMesh = (chunkX, chunkZ) => {
 };
 
 
-let terrainGen_getRenderer = bytes => {
-    let trackCanvas = terrainGen_loadTrackCanvasFromBlob(bytes);
+let terrainGen_getRenderer = mapHandles => {
+    let trackCanvas = terrainGen_loadTrackCanvasFromBlob(mapHandles);
     let heightMapFB = _terrainGen_renderHeightMap(trackCanvas, 
         {"u_preScalePower":1.1,"u_curveScale":3.5,"u_curveOffset":0.1,"u_postScalePower":1.2,"u_noise0":[0.1,25,0],"u_noise1":[0.05,20,0.4],"u_noise2":[0.3,5,1],"u_noise3":[0.5,2,1.2],"u_finalScale":1.5,"u_finalPower":1.3}
     );

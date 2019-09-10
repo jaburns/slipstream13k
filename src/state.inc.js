@@ -77,7 +77,7 @@ let state_createPlayer = ($socket, $id) => ({
 
     $rollVel: 0,
     $pitchVel: 0,
-    $speed: .15,
+    $velocity: [0,0,0],
 });
 
 let state_emitToAllPlayers = rootState => {
@@ -131,24 +131,33 @@ let state_updatePlayer = playerState => {
     playerState.$yaw += G_BANK_TURN_SPEED * playerState.$roll;
 
     let orientation = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, playerState.$roll);
-    let velocity = quat_mulVec3(orientation, [0, 0, -playerState.$speed]);
+    let accelVec = quat_mulVec3(orientation, [0, 0, -G_ACCEL]);
 
-    playerState.$position = vec3_plus(playerState.$position, velocity);
+    playerState.$velocity = vec3_plus(playerState.$velocity, accelVec);
 
-    let col = collision_test(playerState.$position, velocity);
+    if (vec3_length(playerState.$velocity) > G_MAX_SPEED)
+        playerState.$velocity = vec3_normalize(playerState.$velocity).map(x => x*G_MAX_SPEED);
+
+    playerState.$position = vec3_plus(playerState.$position, playerState.$velocity);
+
+    let col = collision_test(playerState.$position, playerState.$velocity);
 
     if (col) {
+        playerState.$velocity = col.map(x=> x * G_COLLISION_SPEED_LOSS);
         // TODO affect $speed, and if you're flipping around don't do that. Just get negative speed
         // Maybe orientation should be decoupled from actual speed so you can bounce without changing orientation.
 
-        playerState.$yaw = col.$yaw;
-        playerState.$pitch = col.$pitch;
-        playerState.$yawVel = playerState.$pitchVel = 0;
+    //  playerState.$yaw = col.$yaw;
+    //  playerState.$pitch = col.$pitch;
+    //  playerState.$yawVel = playerState.$pitchVel = 0;
     }
 
     let cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, 0);
-    let cameraSeekPos = vec3_plus(playerState.$position, quat_mulVec3(cameraSeekRot, [0,.5,-2]));
+    let cameraSeekPos = vec3_minus(playerState.$position, playerState.$velocity.map(x => x*2));
+    cameraSeekPos[1] += 0.5;
 
-    playerState.$camPos = vec3_lerp(playerState.$camPos, cameraSeekPos, 0.04);
-    playerState.$camRot = quat_slerp(playerState.$camRot, cameraSeekRot, 0.2);
+    playerState.$camPos = vec3_lerp(playerState.$camPos, cameraSeekPos, G_CAMERA_POS_LAG);
+    playerState.$camRot = quat_slerp(playerState.$camRot, cameraSeekRot, G_CAMERA_ROT_LAG);
+
+    console.log(track_getClosestNode(playerState.$position));
 };
