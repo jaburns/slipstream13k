@@ -90,7 +90,6 @@ void main()
 
     vec3 col = mix(mix(vec3(0,0,0.2),vec3(0.5,0,0.2),min(color.r*2.,1.)),vec3(1,0.9,0.7),max(0.,color.r-0.5)*2.);
     col = col*i;
-    col = col*0.9+ (norm*0.5+0.5)*0.2;
     //gl_FragColor = vec4(vec3(float(camPos.z<-50.)),1);
     //gl_FragColor = vec4(norm*0.5+0.5,1);
     //gl_FragColor = vec4(vec3(sum),1);

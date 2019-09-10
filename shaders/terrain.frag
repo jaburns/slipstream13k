@@ -20,6 +20,7 @@ void main()
     vec4 terrainLookup = texture2D(u_objTex, v_uv);
     float height = terrainLookup.r;
     float shadow = terrainLookup.g;
+    vec3 sunDir =  normalize(vec3(0.,2.,-1.));
 
-    gl_FragColor = vec4(shadow * 0.5*height, diff, 0);
+    gl_FragColor = vec4(clamp(0., 1., dot(sunDir, v_normal))*0.5*shadow+height*0.3, diff, 0);
 }
