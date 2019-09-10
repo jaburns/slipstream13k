@@ -19,7 +19,7 @@
     "G_KEYCODE_DOWN":  40,
 
     "G_SHIP_SCALE": 0.2,
-
+    "G_SHIP_RADIUS": 0.7,
 
     "G_PITCH_ACCEL": 0.003,
     "G_PITCH_MAX_VEL": 0.03,

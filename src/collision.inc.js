@@ -28,3 +28,33 @@ let collision_sampleWorldNormal = (x, z) => {
 
     return vec3_normalize(vec3_cross(vz, vx));
 };
+
+let collision_test = (position, velocity) => {
+    let normal = 0;
+
+    if (collision_sampleHeightMap(position[0], position[2]) > position[1] - G_SHIP_RADIUS)
+        normal = collision_sampleWorldNormal(position[0], position[2]);
+    [0.707,1].map(r => {
+        for (let i = 0; i < 6; i += Math.PI / 4) {
+            let xx = position[0] + G_SHIP_RADIUS*r*Math.cos(i);
+            let yy = position[2] + G_SHIP_RADIUS*r*Math.sin(i);
+
+            let worldHeight = collision_sampleHeightMap(xx, yy);
+
+            let r1 = r > .8 ? 0 : r;
+            if (worldHeight > position[1] - r1*G_SHIP_RADIUS)
+                normal = collision_sampleWorldNormal(xx, yy);
+        }
+    });
+
+    if (normal && vec3_dot(velocity, normal) <= 0) {
+        let newVel = vec3_reflect(velocity, normal, 1);
+        let normVel = vec3_normalize(newVel);
+
+        return {
+            $yaw: Math.atan2(-newVel[0], -newVel[2]),
+            $pitch: Math.PI/2 - Math.acos(vec3_dot(normVel, [0,1,0])),
+        };
+    }
+    return 0;
+};
