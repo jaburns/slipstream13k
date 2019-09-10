@@ -67,6 +67,8 @@ let renderer_create = () => {
         gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 
         gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        gl.disable(gl.BLEND);
     };
 
     let resize = (w, h) => {
