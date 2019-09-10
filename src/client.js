@@ -53,6 +53,8 @@ let terrainProg = gfx_compileProgram(terrain_vert,terrain_frag)
 
 let scene = {
     $cameraTransform: Transform_create(),
+    $place: 1,
+    $lap: 0,
     $objects: terrainStuff.meshes.map($mesh => ({
         $transform: Transform_create(),
         $mesh,
@@ -114,6 +116,9 @@ let updateSceneFromGameState = state => {
         obj.$transform.s = [G_SHIP_SCALE,G_SHIP_SCALE,-G_SHIP_SCALE];
 
         if (state.$myId == p.$id) {
+            // TODO scene should just have a $thisPlayer on it
+            scene.$place = p.$place;
+            scene.$lap = p.$lap;
             scene.$cameraTransform.p = p.$camPos;
             scene.$cameraTransform.r = p.$camRot;
         }

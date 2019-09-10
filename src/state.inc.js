@@ -18,6 +18,9 @@ let state_lerpPlayerStates = (a, b, t) => {
             $pitch: vec3_lerp([prev.$pitch], [s.$pitch], t)[0],
             $roll: vec3_lerp([prev.$roll], [s.$roll], t)[0],
 
+            $place: s.$place,
+            $lap: s.$lap,
+
             $camPos: vec3_lerp(prev.$camPos, s.$camPos, t), 
             $camRot: quat_slerp(prev.$camRot, s.$camRot, t), 
         });
@@ -54,6 +57,11 @@ let state_PLAYER_SHARED_PROPS = [
     '$yaw',
     '$pitch',
     '$roll',
+
+    '$place',
+    '$lap',
+
+    // TODO debug $checkpoint
     
     '$camPos',
     '$camRot',
@@ -77,6 +85,12 @@ let state_playerJoin = (state, $socket, $id) => {
         $rollVel: 0,
         $pitchVel: 0,
         $velocity: [0,0,0],
+
+        $place: 0,
+
+        $checkpoint: 0,
+        $lap: 0,
+        $lapPosition: 0,
 
         $sounds: [],
     };
@@ -121,6 +135,9 @@ let state_update = rootState => {
             else
                 state_updatePlayerQueued(p);
         });
+
+        rootState.$playerStates.sort((a,b) => (a.$lap+a.$lapPosition) - (b.$lap+b.$lapPosition));
+        rootState.$playerStates.map((p,i) => p.$place = i + 1);
     }
 };
 
@@ -195,12 +212,6 @@ let state_updatePlayerRacing = playerState => {
         }
         playerState.$velocity = col.map(x=> x * G_COLLISION_SPEED_LOSS);
         playerState.$sounds.push(G_SOUNDID_HIT_WALL);
-        // TODO affect $speed, and if you're flipping around don't do that. Just get negative speed
-        // Maybe orientation should be decoupled from actual speed so you can bounce without changing orientation.
-
-    //  playerState.$yaw = col.$yaw;
-    //  playerState.$pitch = col.$pitch;
-    //  playerState.$yawVel = playerState.$pitchVel = 0;
     }
 
     let cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, 0);
@@ -210,5 +221,13 @@ let state_updatePlayerRacing = playerState => {
     playerState.$camPos = vec3_lerp(playerState.$camPos, cameraSeekPos, G_CAMERA_POS_LAG);
     playerState.$camRot = quat_slerp(playerState.$camRot, cameraSeekRot, G_CAMERA_ROT_LAG);
 
-    //console.log(track_getLapPosition(playerState.$position));
+    playerState.$lapPosition = track_getLapPosition(playerState.$position);
+
+    if (playerState.$checkpoint == 0 && playerState.$lapPosition > .25 && playerState.$lapPosition < .50) playerState.$checkpoint = 1;
+    if (playerState.$checkpoint == 1 && playerState.$lapPosition > .50 && playerState.$lapPosition < .75) playerState.$checkpoint = 2;
+    if (playerState.$checkpoint == 2 && playerState.$lapPosition > .75 && playerState.$lapPosition < 1.0) playerState.$checkpoint = 3;
+    if (playerState.$checkpoint == 3 && playerState.$lapPosition < .25 && playerState.$lapPosition > 0.0) {
+        playerState.$checkpoint = 0;
+        playerState.$lap++;
+    }
 };

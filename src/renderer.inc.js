@@ -49,8 +49,8 @@ let renderer_create = () => {
     let textProg = gfx_compileProgram(text_vert, text_frag);
     let textTex = createTextTexture();
 
-    let drawText = () => {
-        textTex.$update(Math.floor(20*Math.random()));
+    let drawText = txt => {
+        textTex.$update(txt);
 
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -266,7 +266,7 @@ let renderer_create = () => {
         });
         swap = nextswap;
 
-        drawText();
+        drawText(scene.$place + " : " + scene.$lap);
     };
 
     return {
