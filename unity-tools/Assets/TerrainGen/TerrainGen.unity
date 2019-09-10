@@ -378,15 +378,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   camera: {fileID: 1794019044}
-  bankAccel: 0.1
-  maxBankVel: 0.1
+  bankAccel: 0.001
+  maxBankVel: 0.02
   maxBank: 1
-  bankRestore: 0.95
-  pitchAccel: 0.1
-  maxPitchVel: 0.1
+  bankRestore: 0.93
+  pitchAccel: 0.001
+  maxPitchVel: 0.02
   maxPitch: 1
-  pitchRestore: 0.95
-  bankRotation: 0.1
+  pitchRestore: 0.9
+  bankRotation: 0.05
 --- !u!1 &1794019044
 GameObject:
   m_ObjectHideFlags: 0

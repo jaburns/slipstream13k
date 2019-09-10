@@ -98,10 +98,10 @@ let state_updatePlayer = playerState => {
 
     // Pitch controls
 
-    if (playerState.$keysDown.indexOf(G_KEYCODE_UP) >= 0) {
+    if (playerState.$keysDown.indexOf(G_KEYCODE_DOWN) >= 0) {
         playerState.$pitchVel += G_PITCH_ACCEL;
         if (playerState.$pitchVel > G_PITCH_MAX_VEL) playerState.$pitchVel = G_PITCH_MAX_VEL;
-    } else if (playerState.$keysDown.indexOf(G_KEYCODE_DOWN) >= 0) {
+    } else if (playerState.$keysDown.indexOf(G_KEYCODE_UP) >= 0) {
         playerState.$pitchVel -= G_PITCH_ACCEL;
         if (playerState.$pitchVel < -G_PITCH_MAX_VEL) playerState.$pitchVel = -G_PITCH_MAX_VEL;
     }  else {
