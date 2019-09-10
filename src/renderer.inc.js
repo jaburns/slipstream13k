@@ -26,7 +26,7 @@ let renderer_create = () => {
         let ctx = canvas.getContext('2d');
 
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 32px \'Avenir Next\', Avenir, \'Helvetica Neue\', Helvetica, Arial, sans-serif';
+        ctx.font = 'bold 32px Helvetica, Arial, sans-serif';
 
         let texture = gl.createTexture();
 
