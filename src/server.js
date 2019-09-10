@@ -3,7 +3,7 @@
 //__include state.inc.js
 
 let state = state_createRoot();
-let newPlayerId = 0;
+let newPlayerId = 1;
 let ready = 0;
 
 module.exports = socket => {

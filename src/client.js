@@ -89,6 +89,7 @@ let connect = () => {
 let getPlayerObject = id => {
     if (!(id in playerObjectsById)) {
         playerObjectsById[id] = {
+            $id: id,
             $transform: Transform_create(),
             $mesh: meshes[G_MODEL_INDEX_ShipGameObject],
             $cull: 0,
@@ -101,7 +102,10 @@ let getPlayerObject = id => {
 };
 
 let updateSceneFromGameState = state => {
+    let touchedIds = [];
+
     state.$playerStates.forEach(p => {
+        touchedIds.push(id);
         let obj = getPlayerObject(p.$id);
 
         let orientation = quat_fromYawPitchRoll(p.$yaw, p.$pitch, p.$roll);
@@ -114,6 +118,8 @@ let updateSceneFromGameState = state => {
             scene.$cameraTransform.r = p.$camRot;
         }
     });
+
+    scene.$objects = scene.$objects.filter(x => !x.$id || touchedIds.indexOf(x.$id) >= 0);
 };
 
 let update = () => {
