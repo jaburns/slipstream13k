@@ -77,6 +77,7 @@ let state_createPlayer = ($socket, $id) => ({
 
     $rollVel: 0,
     $pitchVel: 0,
+    $speed: .15,
 });
 
 let state_emitToAllPlayers = rootState => {
@@ -130,22 +131,19 @@ let state_updatePlayer = playerState => {
     playerState.$yaw += G_BANK_TURN_SPEED * playerState.$roll;
 
     let orientation = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, playerState.$roll);
-    let velocity = quat_mulVec3(orientation, [0, 0, -.15]);
+    let velocity = quat_mulVec3(orientation, [0, 0, -playerState.$speed]);
 
     playerState.$position = vec3_plus(playerState.$position, velocity);
 
-    if (collision_sampleHeightMap(playerState.$position[0], playerState.$position[2]) > playerState.$position[1]) {
-        let normal = collision_sampleWorldNormal(playerState.$position[0], playerState.$position[2]);
+    let col = collision_test(playerState.$position, velocity);
 
-        if (vec3_dot(velocity, normal) <= 0) {
-            let newVel = vec3_reflect(velocity, normal, 1);
-            let normVel = vec3_normalize(newVel);
-            playerState.$yaw = Math.atan2(-newVel[0], -newVel[2]);
-            playerState.$pitch = Math.PI/2 - Math.acos(vec3_dot(normVel, [0,1,0]));
+    if (col) {
+        // TODO affect $speed, and if you're flipping around don't do that. Just get negative speed
+        // Maybe orientation should be decoupled from actual speed so you can bounce without changing orientation.
 
-            playerState.$yawVel = 0;
-            playerState.$pitchVel = 0;
-        }
+        playerState.$yaw = col.$yaw;
+        playerState.$pitch = col.$pitch;
+        playerState.$yawVel = playerState.$pitchVel = 0;
     }
 
     let cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, 0);
