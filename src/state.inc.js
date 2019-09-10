@@ -43,11 +43,13 @@ let filterObject = (obj, props) => {
 
 let state_createRoot = () => ({
     $myId: 0,
+    $raceCountdown: 10 * G_TICK_MILLIS,
     $playerStates: [],
 });
 
 let state_convertToPacket = rootState => ({
     $myId: 0,
+    $raceCountdown: rootState.$raceCountdown,
     $playerStates: rootState.$playerStates.map(x => filterObject(x, state_PLAYER_SHARED_PROPS))
 });
 
@@ -62,23 +64,33 @@ let state_PLAYER_SHARED_PROPS = [
     '$camRot',
 ];
 
-let state_createPlayer = ($socket, $id) => ({
-    $socket,
-    $keysDown: [],
+let state_playerJoin = (state, $socket, $id) => {
+    let newPlayer = {
+        $socket,
+        $keysDown: [],
 
-    $id,
-    $position: [0,G_TERRAIN_WORLDSPACE_HEIGHT * 2,G_TERRAIN_WORLDSPACE_SIZE],
-    $yaw: 0,
-    $pitch: 0,
-    $roll: 0,
+        $id,
+        $position: track_getStartPosition(state.$playerStates.filter(x=>x.$racing).length),
+        $yaw: track_getStartYaw(),
+        $pitch: 0,
+        $roll: 0,
 
-    $camPos: [0,G_TERRAIN_WORLDSPACE_HEIGHT * 2,G_TERRAIN_WORLDSPACE_SIZE],
-    $camRot: [0,0,0,1],
+        $camPos: [0,0,0],
+        $camRot: [0,0,0,1],
 
-    $rollVel: 0,
-    $pitchVel: 0,
-    $velocity: [0,0,0],
-});
+        $racing: state.$raceCountdown > 0,
+        $rollVel: 0,
+        $pitchVel: 0,
+        $velocity: [0,0,0],
+    };
+
+    state.$playerStates.push(newPlayer);
+    return newPlayer;
+};
+
+let state_playerLeave = (state, player) => {
+    state.$playerStates.splice(state.$playerStates.indexOf(player), 1);
+};
 
 let state_emitToAllPlayers = rootState => {
     let packet = state_convertToPacket(rootState);
@@ -89,12 +101,41 @@ let state_emitToAllPlayers = rootState => {
 };
 
 let state_update = rootState => {
-    rootState.$playerStates.forEach(p => {
-        state_updatePlayer(p);
-    });
+    if (rootState.$raceCountdown > 0) {
+        rootState.$raceCountdown--;
+
+        rootState.$playerStates.forEach(p => {
+            if (p.$racing)
+                state_updatePlayerOnDeck(p);
+            else
+                state_updatePlayerQueued(p);
+        });
+    } else {
+        rootState.$playerStates.forEach(p => {
+            if (p.$racing)
+                state_updatePlayerRacing(p);
+            else
+                state_updatePlayerQueued(p);
+        });
+    }
 };
 
-let state_updatePlayer = playerState => {
+let state_updatePlayerQueued = playerState => {
+    playerState.$camPos = [G_TERRAIN_WORLDSPACE_SIZE / 2, 50, G_TERRAIN_WORLDSPACE_SIZE / 2]
+    playerState.$camRot = [-0.707,0,0,0.707];
+};
+
+let state_updatePlayerOnDeck = playerState => {
+    let cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, 0, 0);
+    let offset = quat_mulVec3(cameraSeekRot, [0,0,1]);
+    let cameraSeekPos = vec3_plus(playerState.$position, offset);
+    cameraSeekPos[1] += 0.5;
+
+    playerState.$camPos = vec3_lerp(playerState.$camPos, cameraSeekPos, G_CAMERA_POS_LAG);
+    playerState.$camRot = quat_slerp(playerState.$camRot, cameraSeekRot, G_CAMERA_ROT_LAG);
+};
+
+let state_updatePlayerRacing = playerState => {
 
     // Pitch controls
 
@@ -143,6 +184,10 @@ let state_updatePlayer = playerState => {
     let col = collision_test(playerState.$position, playerState.$velocity);
 
     if (col) {
+        if (col.length > 3) {
+            col.pop();
+            playerState.$pitch = G_CEILING_HIT_PITCH_RESET;
+        }
         playerState.$velocity = col.map(x=> x * G_COLLISION_SPEED_LOSS);
         // TODO affect $speed, and if you're flipping around don't do that. Just get negative speed
         // Maybe orientation should be decoupled from actual speed so you can bounce without changing orientation.
@@ -159,5 +204,5 @@ let state_updatePlayer = playerState => {
     playerState.$camPos = vec3_lerp(playerState.$camPos, cameraSeekPos, G_CAMERA_POS_LAG);
     playerState.$camRot = quat_slerp(playerState.$camRot, cameraSeekRot, G_CAMERA_ROT_LAG);
 
-    console.log(track_getClosestNode(playerState.$position));
+    //console.log(track_getLapPosition(playerState.$position));
 };

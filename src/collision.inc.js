@@ -32,6 +32,10 @@ let collision_sampleWorldNormal = (x, z) => {
 let collision_test = (position, velocity) => {
     let normal = 0;
 
+    if (position[1] + G_SHIP_RADIUS > G_TERRAIN_WORLDSPACE_HEIGHT) {
+        return [velocity[0],-2*velocity[1],velocity[2],1];
+    }
+
     if (collision_sampleHeightMap(position[0], position[2]) > position[1] - G_SHIP_RADIUS)
         normal = collision_sampleWorldNormal(position[0], position[2]);
     [0.707,1].map(r => {
@@ -48,7 +52,7 @@ let collision_test = (position, velocity) => {
     });
 
     if (normal && vec3_dot(velocity, normal) <= 0) {
-        return vec3_reflect(velocity, normal, 1.5);
+        return vec3_reflect(velocity, normal, 3);
     }
 
     return 0;

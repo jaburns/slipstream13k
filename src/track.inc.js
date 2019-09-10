@@ -29,3 +29,21 @@ let track_getLapPosition = pos3 => {
     }
     return minI / track_nodes.length;
 };
+
+let track_getStartYaw = () => 
+    Math.atan2(track_nodes[1][0]-track_nodes[0][0], track_nodes[1][1]-track_nodes[0][1]);
+
+let track_getStartPosition = i => {
+    let result = quat_mulVec3(
+        quat_setAxisAngle([0,1,0], track_getStartYaw()),
+        [
+            ((i%2)*2-1)*G_START_LINE_HORIZONTAL_STAGGER,
+            G_TERRAIN_WORLDSPACE_HEIGHT - G_START_LINE_VERTICAL_BASE - ((i/2)|0)*G_START_LINE_VERTICAL_STAGGER,
+            0
+        ]
+    );
+
+    result[0] += track_nodes[0][0] * G_TERRAIN_WORLDSPACE_SIZE;
+    result[2] += track_nodes[0][1] * G_TERRAIN_WORLDSPACE_SIZE;
+    return result;
+};
