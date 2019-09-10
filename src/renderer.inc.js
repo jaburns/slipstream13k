@@ -19,6 +19,56 @@ let renderer_create = () => {
         , far = 100
         , aspectRatio = 1;
 
+
+    let createTextTexture = () => {
+        let canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 64;
+        let ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 32px \'Avenir Next\', Avenir, \'Helvetica Neue\', Helvetica, Arial, sans-serif';
+
+        let texture = gl.createTexture();
+
+        let update = str => {
+            ctx.clearRect(0, 0, 64, 64);
+            ctx.fillText(str, 2, 32);
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+        };
+        update();
+
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+        return {
+            $update: update,
+            $texture: texture,
+        };
+    };
+
+    let textProg = gfx_compileProgram(text_vert, text_frag);
+    let textTex = createTextTexture();
+
+    let drawText = () => {
+        textTex.$update(Math.floor(20*Math.random()));
+
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        // TODO re-use gfx_renderBuffer()
+        gl.useProgram(textProg);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, textTex.$texture);
+        gl.uniform1i(gl.getUniformLocation(textProg, "u_tex"), 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, gfx_fullQuadVertexBuffer);
+        let posLoc = gl.getAttribLocation(textProg, "a_position");
+        gl.enableVertexAttribArray(posLoc);
+        gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+    };
+
     let resize = (w, h) => {
         frameBuffers[0].r(w, h);
         frameBuffers[1].r(w, h);
@@ -212,7 +262,9 @@ let renderer_create = () => {
             gl.bindTexture(gl.TEXTURE_2D, downed.t);
             gl.uniform1i(gl.getUniformLocation(copyProg, 'u_bloom'), 1);
         });
-        swap = nextswap
+        swap = nextswap;
+
+        drawText();
     };
 
     return {

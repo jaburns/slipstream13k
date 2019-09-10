@@ -105,7 +105,7 @@ let updateSceneFromGameState = state => {
     let touchedIds = [];
 
     state.$playerStates.forEach(p => {
-        touchedIds.push(id);
+        touchedIds.push(p.$id);
         let obj = getPlayerObject(p.$id);
 
         let orientation = quat_fromYawPitchRoll(p.$yaw, p.$pitch, p.$roll);
