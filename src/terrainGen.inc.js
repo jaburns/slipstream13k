@@ -70,9 +70,11 @@ let _terrainGen_renderHeightMap = (trackCanvas, uniforms) => {
             }
         }
     });
-    mipStack = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()];
+
+    let mipStack = math_range(0,6).map(gfx_createFrameBufferTexture);
     s = 2048;
     for(i=0;i<mipStack.length;i++){
+        // TODO is this a typo?
         s = ~~(2048/2);
         mipStack[i].r(s,s);
     }
@@ -80,10 +82,12 @@ let _terrainGen_renderHeightMap = (trackCanvas, uniforms) => {
 };
 
 let terrainGen_loadTrackCanvasFromBlob = mapHandles => {
-    let canvas = document.createElement('canvas');
-    canvas.width = canvas.height = G_HEIGHTMAP_SIZE;
+    let ctx = gfx_createCanvas2d(G_HEIGHTMAP_SIZE, G_HEIGHTMAP_SIZE);
 
-    let ctx = canvas.getContext('2d');
+//  let canvas = document.createElement('canvas');
+//  canvas.width = canvas.height = G_HEIGHTMAP_SIZE;
+//  let ctx = canvas.getContext('2d');
+
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, G_HEIGHTMAP_SIZE, G_HEIGHTMAP_SIZE);
     ctx.strokeStyle = '#fff';
@@ -100,7 +104,7 @@ let terrainGen_loadTrackCanvasFromBlob = mapHandles => {
 
     _terrainGen_signedDistanceFill(ctx);
 
-    return canvas;
+    return ctx.canvas;
 }
 
 let chunksPerMapSide = 5;

@@ -7,6 +7,7 @@ gl.getExtension("OES_texture_half_float");
 gl.clearColor(0, 0, 0, 1);
 
 //__include soundbox-player.inc.js
+
 //__include song.inc.js
 
 //__include shaders.gen.js

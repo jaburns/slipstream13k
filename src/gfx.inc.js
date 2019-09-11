@@ -10,6 +10,13 @@ if (__DEBUG) {
     };
 }
 
+let gfx_createCanvas2d = (w,h,c) => (
+    c = document.createElement('canvas'),
+    c.width = w,
+    c.height = h,
+    c.getContext('2d')
+);
+
 let gfx_compileProgram = (vert, frag) => {
     let vertShader = gl.createShader(gl.VERTEX_SHADER);
     gl.shaderSource(vertShader, vert);

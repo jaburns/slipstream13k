@@ -191,6 +191,8 @@ const findObjectPropertyReplacements = allCode => {
     const props = _.uniq(allCode.match(/[^a-zA-Z0-9_]\$[a-zA-Z0-9_]+/g))
         .map(x => x.substr(1));
 
+    props.sort((a, b) => b.length - a.length);
+
     return _.zip(
         props.map(x => new RegExp('\\'+x, 'g')),
         getObjectPropertyMinNames(props.length)

@@ -4,29 +4,27 @@ let renderer_create = () => {
         , reprojectProg = gfx_compileProgram(reproject_vert,reproject_frag)
         , copyProg = gfx_compileProgram(fullQuad_vert,copy_frag)
         , downDepthProg = gfx_compileProgram(fullQuad_vert, downDepth_frag)
-        , frameBuffers = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()]
-        , depthStack = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()]
-        , mipStack = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture()]
+        , frameBuffers = math_range(0,3).map(gfx_createFrameBufferTexture)
+        , depthStack = math_range(0,9).map(gfx_createFrameBufferTexture)
+        , mipStack = math_range(0,9).map(gfx_createFrameBufferTexture)
         , swap = 0
         , frame = 0
         , cubeTexture = gfx_createCubeMap()
         , FRAMES = 32
         , motionCubeTexture = gfx_createMotionCubeMap(FRAMES)
         , projectionMatrix
+        , projectionMatrixInv
         , viewMatrix
+        , viewMatrixInv
         , lastViewMatrix
-        , near = 0.2
-        , far = 100
         , aspectRatio = 1;
 
+    let killTranslation = (x,i) => i > 11 && i < 15 ? 0 : x;
 
     let createTextTexture = () => {
-        let canvas = document.createElement('canvas');
-        canvas.width = canvas.height = 64;
-        let ctx = canvas.getContext('2d');
-
+        let ctx = gfx_createCanvas2d(64,64);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 32px Helvetica, Arial, sans-serif';
+        ctx.font = 'bold 32px sans-serif';
 
         let texture = gl.createTexture();
 
@@ -34,7 +32,7 @@ let renderer_create = () => {
             ctx.clearRect(0, 0, 64, 64);
             ctx.fillText(str, 2, 32);
             gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, ctx.canvas);
         };
         update();
 
@@ -93,31 +91,24 @@ let renderer_create = () => {
         
         gl.depthMask(false);
         {
-            let projection = mat4_multiply(projectionMatrix,viewMatrix);
-            var rv = viewMatrix.map(x=>x);
-            rv[12]=0;
-            rv[13]=0;
-            rv[14]=0;
+            let invertProjection = mat4_multiply(viewMatrixInv, projectionMatrixInv);
             
-            let lastProjection = mat4_multiply(projectionMatrix,lastViewMatrix)
-            let reproject = mat4_multiply(lastProjection,mat4_invert(projection));
-
-
-            let vertexBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,-1,-1,1,-1,1,-1,1,1,-1,1]), gl.STATIC_DRAW);
+            let lastProjection = mat4_multiply(projectionMatrix,lastViewMatrix);
+            let reproject = mat4_multiply(lastProjection,invertProjection);
 
             gl.useProgram(skyboxProg);
 
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
             gl.uniform1i(gl.getUniformLocation(skyboxProg, "u_tex"), 0);
-            let inv_vp = mat4_invert(mat4_multiply(projectionMatrix,rv));
+
+            let rvi = viewMatrixInv.map(killTranslation);
+            let inv_vp = mat4_multiply(rvi,projectionMatrixInv);
+
             gl.uniformMatrix4fv(gl.getUniformLocation(skyboxProg, 'u_inv_vp'), false, inv_vp);
             gl.uniformMatrix4fv(gl.getUniformLocation(skyboxProg, 'u_reproject'), false, reproject);
 
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+            gl.bindBuffer(gl.ARRAY_BUFFER, gfx_fullQuadVertexBuffer);
             let posLoc = gl.getAttribLocation(skyboxProg, "a_position");
             gl.enableVertexAttribArray(posLoc);
             gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
@@ -174,10 +165,20 @@ let renderer_create = () => {
         gl.viewport(0,0,innerWidth,innerHeight);
         nextswap = (swap+1)%2;
         
-        projectionMatrix = mat4_perspective(aspectRatio, near, far);
-        viewMatrix = mat4_invert(Transform_toMatrix(scene.$cameraTransform));
+        projectionMatrix = mat4_perspectiveHardCoded(aspectRatio);
+        projectionMatrixInv = mat4_perspectiveInverseHardCoded(aspectRatio);
 
-        if(lastViewMatrix==null) lastViewMatrix=viewMatrix;
+        viewMatrix = mat4_multiply(
+            mat4_fromRotationTranslationScale(quat_conj(scene.$cameraTransform.r), [0,0,0], [1,1,1]),
+            mat4_fromRotationTranslationScale([0,0,0,1], scene.$cameraTransform.p.map(x=>-x), [1,1,1])
+        );
+        viewMatrixInv = 
+            mat4_fromRotationTranslationScale(scene.$cameraTransform.r, scene.$cameraTransform.p, [1,1,1]);
+
+        if(!lastViewMatrix) {
+            lastViewMatrix = viewMatrix;
+            lastViewMatrixInv = viewMatrixInv;
+        }
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffers[2].f);
 
@@ -188,7 +189,7 @@ let renderer_create = () => {
         gl.disable(gl.DEPTH_TEST);
 
         gfx_renderBuffer(linProg, frameBuffers[2].d,depthStack[0],()=>{
-            gl.uniform3f(gl.getUniformLocation(linProg, 'u_clip'), near*far, near-far, far);
+            gl.uniform3f(gl.getUniformLocation(linProg, 'u_clip'), G_NEAR_PLANE*G_FAR_PLANE, G_NEAR_PLANE-G_FAR_PLANE, G_FAR_PLANE);
         });
 
         for(i=1; i<depthStack.length; i++){
@@ -200,7 +201,7 @@ let renderer_create = () => {
             gl.bindTexture(gl.TEXTURE_2D, frameBuffers[swap].t);
             gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_old'), 1);
 
-            gl.uniform3f(gl.getUniformLocation(reprojectProg, 'u_clip'), near*far, near-far, far);
+            gl.uniform3f(gl.getUniformLocation(reprojectProg, 'u_clip'), G_NEAR_PLANE*G_FAR_PLANE, G_NEAR_PLANE-G_FAR_PLANE, G_FAR_PLANE);
 
             let inverter = [-2.0/(projectionMatrix[0]),
             -2.0/(projectionMatrix[5]),
@@ -221,16 +222,11 @@ let renderer_create = () => {
 
             gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_time"), frame);
 
-            var rv = viewMatrix.map(x=>x);
-            rv[12]=0;
-            rv[13]=0;
-            rv[14]=0;
+            let rvi = viewMatrixInv.map(killTranslation);
+            let invertProjection =  mat4_multiply(rvi, projectionMatrixInv);
 
-            let projection = mat4_multiply(projectionMatrix,rv);
-
-            gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_vp'), false, mat4_invert(projection));
-
-            gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_p'), false, mat4_invert(projectionMatrix));
+            gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_vp'), false, invertProjection);
+            gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_p'), false, projectionMatrixInv);
 
             let subFrames=8;
             let f = ~~(frame/subFrames) % (FRAMES * 2-2);
