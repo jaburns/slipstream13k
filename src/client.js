@@ -61,7 +61,7 @@ let scene = {
         $mesh,
         $cull: 1,
         $prog: terrainProg,
-        $tex: terrainStuff.heightMapTexture
+        $tex: terrainStuff.$heightMapTexture
     }))
 };
 let playerObjectsById = {};
@@ -82,7 +82,7 @@ let connect = () => {
 
         socket.on(G_MSG_REQUEST_TERRAIN, () => {
             socket.emit(G_MSG_UPLOAD_TERRAIN, {
-                $terrain: terrainGen_serializeHeightMap(terrainStuff.heightMapTexture),
+                $terrain: terrainGen_serializeHeightMap(terrainStuff.$heightMapTexture),
                 $mapHandles: mapHandles,
             });
         });

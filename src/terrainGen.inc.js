@@ -84,10 +84,6 @@ let _terrainGen_renderHeightMap = (trackCanvas, uniforms) => {
 let terrainGen_loadTrackCanvasFromBlob = mapHandles => {
     let ctx = gfx_createCanvas2d(G_HEIGHTMAP_SIZE, G_HEIGHTMAP_SIZE);
 
-//  let canvas = document.createElement('canvas');
-//  canvas.width = canvas.height = G_HEIGHTMAP_SIZE;
-//  let ctx = canvas.getContext('2d');
-
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, G_HEIGHTMAP_SIZE, G_HEIGHTMAP_SIZE);
     ctx.strokeStyle = '#fff';
@@ -167,7 +163,7 @@ let terrainGen_getRenderer = mapHandles => {
 
     return {
         meshes,
-        heightMapTexture: heightMapFB.t,
+        $heightMapTexture: heightMapFB.t,
     };
 }
 
