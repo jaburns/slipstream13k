@@ -4,7 +4,7 @@ let renderer_create = () => {
         , reprojectProg = gfx_compileProgram(reproject_vert,reproject_frag)
         , copyProg = gfx_compileProgram(fullQuad_vert,copy_frag)
         , downDepthProg = gfx_compileProgram(fullQuad_vert, downDepth_frag)
-        , frameBuffers = math_range(0,3).map(gfx_createFrameBufferTexture)
+        , frameBuffers = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(true)]
         , depthStack = math_range(0,9).map(gfx_createFrameBufferTexture)
         , mipStack = math_range(0,9).map(gfx_createFrameBufferTexture)
         , swap = 0
