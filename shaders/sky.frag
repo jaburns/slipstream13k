@@ -7,7 +7,7 @@ uniform float u_slice;
 
 float turb(vec3 p,float gain, float lac,int iter){
 	float sum = 0.;
-	for(float i=0.; i<10.; ++i){
+	for(float i=0.; i<10.; i++){
 	  float g = pow(gain,i);
 	  float l = lac * pow(2.,i);
 		float spd = lac * pow(2.,floor(i/2.));

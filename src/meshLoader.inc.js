@@ -38,12 +38,15 @@ let meshLoader_loadMeshesBlob = bytes => {
     let meshWithRegularNormals = (verts, tris) => {
         let trisPerVert = verts.map(_ => []);
         let norms = verts.map(_ => 0);
-        let i;
 
-        for (i = 0; i < tris.length; ++i)
-            trisPerVert[tris[i]].push(~~(i/3));
+        for (let i = 0; i < tris.length - 2; i += 3)
+        {
+            trisPerVert[tris[i  ]].push(i);
+            trisPerVert[tris[i+1]].push(i);
+            trisPerVert[tris[i+2]].push(i);
+        }
 
-        for (i = 0; i < verts.length / 3; ++i)
+        for (let i = 0; i < verts.length / 3; ++i)
         {
             let n = [0,0,0];
 

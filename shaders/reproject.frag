@@ -68,7 +68,7 @@ void main()
     vec3 norm = normalize(cross(dFdx(camPos),dFdy(camPos)));
 
     float sum = 0.;
-    for(int i=0; i<2; ++i){
+    for(int i=0; i<2; i++){
         //sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+1.)/u_resolution,u_depth);
         sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+2.)/u_resolution*2.,u_depth1);
         sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+3.)/u_resolution*4.,u_depth2);
