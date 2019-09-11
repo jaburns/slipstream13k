@@ -93,7 +93,7 @@ let renderer_create = () => {
             let rvi = viewMatrixInv.map(killTranslation);
             let inv_vp = mat4_multiply(rvi,projectionMatrixInv);
 
-            gl.uniformMatrix4fv(gl.getUniformLocation(skyboxProg, 'u_inv_vp'), false, inv_vp);
+            gl.uniformMatrix4fv(gl.getUniformLocation(skyboxProg, 'u_invVp'), false, inv_vp);
             gl.uniformMatrix4fv(gl.getUniformLocation(skyboxProg, 'u_reproject'), false, reproject);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, gfx_fullQuadVertexBuffer);
@@ -124,7 +124,7 @@ let renderer_create = () => {
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_view'), false, viewMatrix);
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_proj'), false, projectionMatrix);
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvp'), false, mvp);
-            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvp_old'), false, mvpOld);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvpOld'), false, mvpOld);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, obj.$mesh.v);
             let posLoc = gl.getAttribLocation(obj.$prog, 'a_position');
@@ -200,12 +200,12 @@ let renderer_create = () => {
 
             gl.activeTexture(gl.TEXTURE2);
             gl.bindTexture(gl.TEXTURE_2D, depthStack[0].t);
-            gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth'), 2);
+            gl.uniform1i(gl.getUniformLocation(reprojectProg, 'd'), 2);
 
             for (let i = 0; i <= 5; ++i) {
                 gl.activeTexture(gl.TEXTURE5+i);
                 gl.bindTexture(gl.TEXTURE_2D, depthStack[1+i].t);
-                gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_depth'+(i+1)), 5+i);
+                gl.uniform1i(gl.getUniformLocation(reprojectProg, 'd'+(i+1)), 5+i);
             }
 
             gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_time"), frame);
@@ -213,8 +213,7 @@ let renderer_create = () => {
             let rvi = viewMatrixInv.map(killTranslation);
             let invertProjection =  mat4_multiply(rvi, projectionMatrixInv);
 
-            gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_vp'), false, invertProjection);
-            gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_inv_p'), false, projectionMatrixInv);
+            gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_invVp'), false, invertProjection);
 
             let subFrames=8;
             let f = ~~(frame/subFrames) % (FRAMES * 2-2);

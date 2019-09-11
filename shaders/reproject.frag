@@ -1,12 +1,12 @@
 uniform sampler2D u_tex;
 uniform sampler2D u_old;
-uniform sampler2D u_depth;
-uniform sampler2D u_depth1;
-uniform sampler2D u_depth2;
-uniform sampler2D u_depth3;
-uniform sampler2D u_depth4;
-uniform sampler2D u_depth5;
-uniform sampler2D u_depth6;
+uniform sampler2D d;
+uniform sampler2D d1;
+uniform sampler2D d2;
+uniform sampler2D d3;
+uniform sampler2D d4;
+uniform sampler2D d5;
+uniform sampler2D d6;
 
 uniform sampler2D u_motion;
 uniform samplerCube u_cube1;
@@ -61,7 +61,7 @@ void main()
 {
     vec4 color = texture2D(u_tex, v_uv);
 
-    vec3 camPos = getPosition(v_uv,u_depth);
+    vec3 camPos = getPosition(v_uv,d);
 
     vec2 objectMotion = color.gb;
 
@@ -70,12 +70,12 @@ void main()
     float sum = 0.;
     for(int i=0; i<2; i++){
         //sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+1.)/u_resolution,u_depth);
-        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+2.)/u_resolution*2.,u_depth1);
-        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+3.)/u_resolution*4.,u_depth2);
-        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+4.)/u_resolution*8.,u_depth3);
-        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+5.)/u_resolution*16.,u_depth4);
-        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+6.)/u_resolution*32.,u_depth5);
-        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+7.)/u_resolution*64.,u_depth6);
+        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+2.)/u_resolution*2., d1);
+        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+3.)/u_resolution*4., d2);
+        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+4.)/u_resolution*8., d3);
+        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+5.)/u_resolution*16.,d4);
+        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+6.)/u_resolution*32.,d5);
+        sum+=sampleAO(camPos,norm,v_uv+rand(v_uv+7.)/u_resolution*64.,d6);
     }
     sum = sum/12.;
 

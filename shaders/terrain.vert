@@ -9,7 +9,7 @@ uniform mat4 u_model;
 uniform mat4 u_view;
 uniform mat4 u_proj;
 
-uniform mat4 u_mvp_old;
+uniform mat4 u_mvpOld;
 uniform mat4 u_mvp;
 
 varying vec3 v_color;
@@ -17,7 +17,7 @@ varying vec3 v_normal;
 varying vec3 v_position;
 
 varying vec4 v_pos;
-varying vec4 v_pos_old;
+varying vec4 v_posOld;
 
 varying vec2 v_uv;
 
@@ -51,6 +51,6 @@ void main()
     v_color = position.xyz / 50.;
 
     // ALL OBJECT SHADERS
-    v_pos_old = u_mvp_old * vec4(position, 1);
+    v_posOld = u_mvpOld * vec4(position, 1);
 
 }

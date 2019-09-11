@@ -182,8 +182,8 @@ const findShaderInternalReplacements = allShaderCode => {
     externals.sort((a, b) => b.length - a.length);
 
     return _.zip(
-        externals.map(x => new RegExp(x, 'g')),
-        getShaderMinNames(externals.length)
+        externals.map(x => new RegExp('([^a-zA-Z0-9_])'+x, 'g')),
+        getShaderMinNames(externals.length).map(x => '$1'+x)
     );
 };
 
