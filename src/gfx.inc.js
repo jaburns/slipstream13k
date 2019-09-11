@@ -54,7 +54,7 @@ let gfx_renderBuffer = (shader, src, dst, preDraw) => {
     gl.useProgram(shader);
 
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, src.t);
+    gl.bindTexture(gl.TEXTURE_2D, src.t||src);
     gl.uniform1i(gl.getUniformLocation(shader, "u_tex"), 0);
 
     gl.uniform2f(gl.getUniformLocation(shader, 'u_resolution'), src.w||dst.w, src.h||dst.h);
