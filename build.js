@@ -27,9 +27,21 @@ const minNameFactory = fn => {
     };
 }
 
+//const letterNames = 
+//    Array(1000).fill().map((x,n) => 
+//        isNaN(parseInt(n.toString(36))) && (n < 36 || isNaN(parseInt(n.toString(36)[1]))) 
+//            ? n.toString(36)
+//            : null
+//        ).filter(x => x);
+
+//const getShaderMinNames = minNameFactory(n => letterNames[n]);
+//const getObjectPropertyMinNames = minNameFactory(n => letterNames[n]);
+//const getSharedFuncMinNames = minNameFactory(n => '$'+letterNames[n]);
+
 const getShaderMinNames = minNameFactory(n => (360+n).toString(36));
 const getObjectPropertyMinNames = minNameFactory(n => (360+n).toString(36));
 const getSharedFuncMinNames = minNameFactory(n => 'l'+(36+n).toString(36));
+
 
 const convertSong = song => [
     song.songData.map(x => [
