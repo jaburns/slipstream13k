@@ -207,14 +207,6 @@ let renderer_create = () => {
             (1.0- projectionMatrix[8]) / projectionMatrix[0],
             (1.0+ projectionMatrix[9]) / projectionMatrix[5]];
 
-            let ip = mat4_invert(projectionMatrix);
-            for(i=0; i<4;i++){
-                s="";
-                for(j=0; j<4;j++){
-                    s+=ip[j*4+i]+", ";
-                }
-            }
-
             gl.uniform4f(gl.getUniformLocation(reprojectProg, 'u_proj'), inverter[0],inverter[1],inverter[2],inverter[3]);
 
             gl.activeTexture(gl.TEXTURE2);

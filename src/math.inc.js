@@ -9,6 +9,7 @@ let vec3_lerp = (a, b, t) => a.map((x,i)=> x + t*(b[i]-x));
 
 let math_clamp = (a, b, x) => x<a?a:x>b?b:x;
 let math_clamp01 = x => math_clamp(0,1,x);
+let math_range = (a, b) => Array(b-a).fill().map((x,i)=>i+a);
 
 let vec3_dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 
@@ -52,38 +53,6 @@ let quat_fromYawPitchRoll = (yaw, pitch, roll) => {
 };
 
 let quat_slerp = vec3_lerp;
-/*
-let quat_slerp = (a, b, t) => {
-    let bx = b[0], by = b[1], bz = b[2], bw = b[3];
-    let omega, cosom, sinom, scale0, scale1;
-    cosom = a[0] * bx + a[1] * by + a[2] * bz + a[3] * bw;
-
-    if (cosom < 0) {
-        cosom = -cosom;
-        bx = -bx;
-        by = -by;
-        bz = -bz;
-        bw = -bw;
-    }
-
-    if ((1 - cosom) > 1e-9) {
-        omega  = Math.acos(cosom);
-        sinom  = Math.sin(omega);
-        scale0 = Math.sin((1.0 - t) * omega) / sinom;
-        scale1 = Math.sin(t * omega) / sinom;
-    } else {
-        scale0 = 1.0 - t;
-        scale1 = t;
-    }
-
-    return [
-        scale0 * a[0] + scale1 * bx,
-        scale0 * a[1] + scale1 * by,
-        scale0 * a[2] + scale1 * bz,
-        scale0 * a[3] + scale1 * bw
-    ];
-};
-*/
 
 let quat_mulVec3 = (q, v) => mat4_mulNormal(mat4_fromRotationTranslationScale(q,[0,0,0],[1,1,1]), v);
 
@@ -118,24 +87,13 @@ let mat4_mulNormal = (m, a) => [
     a[0]*m[2] + a[1]*m[6] + a[2]*m[10]
 ];
 
-let mat4_multiply = (a, b) => [
-    b[0]*a[0] + b[1]*a[4] + b[2]*a[8] + b[3]*a[12],
-    b[0]*a[1] + b[1]*a[5] + b[2]*a[9] + b[3]*a[13],
-    b[0]*a[2] + b[1]*a[6] + b[2]*a[10] + b[3]*a[14],
-    b[0]*a[3] + b[1]*a[7] + b[2]*a[11] + b[3]*a[15],
-        b[4]*a[0] + b[5]*a[4] + b[6]*a[8] + b[7]*a[12],
-        b[4]*a[1] + b[5]*a[5] + b[6]*a[9] + b[7]*a[13],
-        b[4]*a[2] + b[5]*a[6] + b[6]*a[10] + b[7]*a[14],
-        b[4]*a[3] + b[5]*a[7] + b[6]*a[11] + b[7]*a[15],
-    b[8]*a[0] + b[9]*a[4] + b[10]*a[8] + b[11]*a[12],
-    b[8]*a[1] + b[9]*a[5] + b[10]*a[9] + b[11]*a[13],
-    b[8]*a[2] + b[9]*a[6] + b[10]*a[10] + b[11]*a[14],
-    b[8]*a[3] + b[9]*a[7] + b[10]*a[11] + b[11]*a[15],
-        b[12]*a[0] + b[13]*a[4] + b[14]*a[8] + b[15]*a[12],
-        b[12]*a[1] + b[13]*a[5] + b[14]*a[9] + b[15]*a[13],
-        b[12]*a[2] + b[13]*a[6] + b[14]*a[10] + b[15]*a[14],
-        b[12]*a[3] + b[13]*a[7] + b[14]*a[11] + b[15]*a[15]
-];
+let mat4_multiply = (a, b) => 
+    math_range(0,16).map((x,i,j) => (
+        i=4*(x/4|0), j=x%4,
+        b[i]*a[j] + b[i+1]*a[j+4] + b[i+2]*a[j+8] + b[i+3]*a[j+12]
+    ));
+
+// TODO maybe move all matrix inversion to the GPU
 
 let mat4_invert = (a) => {
     let a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
