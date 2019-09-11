@@ -7,7 +7,7 @@ let meshLoader_loadMeshesBlob = bytes => {
         let normals = [];
         let i = 0;
 
-        tris.forEach((t,i) => {
+        tris.map((t,i) => {
             newVerts=newVerts.concat(verts[3*t],verts[3*t+1],verts[3*t+2]);
             newTris.push(i);
         });
@@ -50,7 +50,7 @@ let meshLoader_loadMeshesBlob = bytes => {
         {
             let n = [0,0,0];
 
-            trisPerVert[i].forEach(triIndex => {
+            trisPerVert[i].map(triIndex => {
                 let x0 = verts[3*tris[triIndex+0]+0];
                 let y0 = verts[3*tris[triIndex+0]+1];
                 let z0 = verts[3*tris[triIndex+0]+2];
@@ -167,8 +167,8 @@ let meshLoader_loadMeshesBlob = bytes => {
         let norms = [];
 
         let innerPrefab = (prefab, matrix, depth) => {
-            prefab.forEach(child => {
-                let newMatrix = mat4_multiply(matrix, Transform_toMatrix(child));
+            prefab.map(child => {
+                let newMatrix = mat4_multiply(matrix, mat4_fromRotationTranslationScale(child.r, child.p, child.s));
 
                 if (child.f) {
                     if (depth < G_MAX_PREFAB_DEPTH)
@@ -186,7 +186,7 @@ let meshLoader_loadMeshesBlob = bytes => {
                 }
             });
         };
-        innerPrefab(prefab, mat4_create(), 0);
+        innerPrefab(prefab, mat4_identity(), 0);
 
         let result = {t:tris.length};
 
