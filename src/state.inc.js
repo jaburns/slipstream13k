@@ -60,8 +60,6 @@ let state_PLAYER_SHARED_PROPS = [
 
     '$place',
     '$lap',
-
-    // TODO debug $checkpoint
     
     '$camPos',
     '$camRot',
@@ -136,7 +134,7 @@ let state_update = rootState => {
                 state_updatePlayerQueued(p);
         });
 
-        rootState.$playerStates.sort((a,b) => (a.$lap+a.$lapPosition) - (b.$lap+b.$lapPosition));
+        rootState.$playerStates.sort((a,b) => (b.$lap+b.$lapPosition) - (a.$lap+a.$lapPosition));
         rootState.$playerStates.map((p,i) => p.$place = i + 1);
     }
 };

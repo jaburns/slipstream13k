@@ -31,7 +31,7 @@ let track_getLapPosition = pos3 => {
 };
 
 let track_getStartYaw = () => 
-    Math.atan2(track_nodes[1][0]-track_nodes[0][0], track_nodes[1][1]-track_nodes[0][1]);
+    Math.atan2(track_nodes[0][0]-track_nodes[1][0], track_nodes[0][1]-track_nodes[1][1]);
 
 let track_getStartPosition = i => {
     let result = quat_mulVec3(
