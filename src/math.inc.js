@@ -45,6 +45,8 @@ let quat_mul = (a, b) => [
     a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]
 ];
 
+let quat_conj = a => [-a[0], -a[1], -a[2], a[3]];
+
 let quat_fromYawPitchRoll = (yaw, pitch, roll) => {
     return quat_mul(
         quat_mul(quat_setAxisAngle([0,1,0], yaw), quat_setAxisAngle([1,0,0], pitch)),
@@ -67,6 +69,12 @@ let mat4_perspective = (aspect, near, far) => {
         0, 0, (2 * far * near) * nf, 0
     ];
 };
+
+// FOV = PI / 2, near = 0.2, far = 100
+let mat4_perspectiveHardCoded = aspect =>
+    [1/aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1.004, -1,     0, 0, -0.4008, 0];
+let mat4_perspectiveInverseHardCoded = aspect =>
+    [  aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0,      0, -2.495, 0, 0, -1,      2.505];
 
 // Transform a vec3 my a mat4. w is assumed 1 in the vec4 used internally.
 let mat4_mulPosition = (m, a) => {
@@ -93,8 +101,7 @@ let mat4_multiply = (a, b) =>
         b[i]*a[j] + b[i+1]*a[j+4] + b[i+2]*a[j+8] + b[i+3]*a[j+12]
     ));
 
-// TODO maybe move all matrix inversion to the GPU
-
+// TODO compute/hardcode inverses separately and lose this function
 let mat4_invert = (a) => {
     let a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
     let a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];

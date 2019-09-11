@@ -207,7 +207,7 @@ let renderer_create = () => {
             (1.0- projectionMatrix[8]) / projectionMatrix[0],
             (1.0+ projectionMatrix[9]) / projectionMatrix[5]];
 
-            gl.uniform4f(gl.getUniformLocation(reprojectProg, 'u_proj'), inverter[0],inverter[1],inverter[2],inverter[3]);
+            gl.uniform4fv(gl.getUniformLocation(reprojectProg, 'u_proj'), inverter);
 
             gl.activeTexture(gl.TEXTURE2);
             gl.bindTexture(gl.TEXTURE_2D, depthStack[0].t);
