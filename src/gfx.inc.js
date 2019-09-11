@@ -50,9 +50,8 @@ let gfx_fullQuadVertexBuffer = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, gfx_fullQuadVertexBuffer);
 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,1,-1,-1,1,-1,1,-1,1,1,-1,1]), gl.STATIC_DRAW);
 
-let gfx_renderBuffer = (shader, src, dst, preDraw) => {
+let gfx_renderBuffer = (src, dst, preDraw) => {
     gl.useProgram(shader);
-
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, src.t||src);
     gl.uniform1i(gl.getUniformLocation(shader, "u_tex"), 0);
@@ -147,9 +146,8 @@ let gfx_rotations = [
       0, 0,-1]
 ];
 
-let gfx_createCube = (shader,s,format,frame) => {
+let gfx_createCube = (s,format,frame) => {
     gl.useProgram(shader);
-
     let framebuffer = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
         
@@ -180,8 +178,9 @@ let gfx_createCube = (shader,s,format,frame) => {
 
 let gfx_createMotionCubeMap = FRAMES =>{
     let cube = [];
+    shader = gfx_compileProgram(fullQuad_vert,curlBox_frag);
     for(var f=0; f<FRAMES; f++){
-        cube[f] = gfx_createCube(gfx_compileProgram(fullQuad_vert,curlBox_frag),256,36193,f/FRAMES);
+        cube[f] = gfx_createCube(256,36193,f/FRAMES);
     }
     return cube;
 }
@@ -190,11 +189,11 @@ let gfx_downProg = gfx_compileProgram(fullQuad_vert,downSample_frag)
     , gfx_upProg = gfx_compileProgram(fullQuad_vert,upSample_frag);
 
 let gfx_downSample = (buf,amt,mipStack) =>{
-    let shader = gfx_downProg;
+    shader = gfx_downProg;
     let oldBuf=buf;
     for(i=0; i<amt; i++){
         buf = mipStack[i];
-        gfx_renderBuffer(shader,oldBuf,buf);
+        gfx_renderBuffer(oldBuf,buf);
         oldBuf=buf;
     }
 
@@ -203,7 +202,7 @@ let gfx_downSample = (buf,amt,mipStack) =>{
     for(i=amt-2; i>1; i--){
         buf = mipStack[i];
         
-        gfx_renderBuffer(shader,oldBuf,buf);
+        gfx_renderBuffer(oldBuf,buf);
 
         oldBuf=buf;
     }
