@@ -22,5 +22,5 @@ void main()
     float shadow = terrainLookup.g;
     vec3 sunDir =  normalize(vec3(0.,2.,-1.));
 
-    gl_FragColor = vec4(clamp(0., 1., dot(sunDir, v_normal))*0.5*shadow+height*0.3, diff, 0);
+    gl_FragColor = vec4(clamp(dot(sunDir, v_normal), 0., 1.)*0.5*shadow+height*0.3, diff, 0);
 }
