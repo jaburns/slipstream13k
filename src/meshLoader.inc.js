@@ -60,7 +60,8 @@ let meshLoader_loadMeshesBlob = bytes => {
                 let y2 = verts[3*tris[triIndex+2]+1];
                 let z2 = verts[3*tris[triIndex+2]+2];
 
-                n = vec3_plus(n, vec3_cross([x1-x0, y1-y0, z1-z0], [x2-x0, y2-y0, z2-z0]));
+                let cross = vec3_cross([x1-x0, y1-y0, z1-z0], [x2-x0, y2-y0, z2-z0]);
+                n = vec3_plus(n, cross);
             });
 
             n = vec3_normalize(n);
