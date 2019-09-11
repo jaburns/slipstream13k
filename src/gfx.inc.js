@@ -147,12 +147,8 @@ let gfx_rotations = [
       0, 0,-1]
 ];
 
-let gfx_createCubeMap = () =>{
-
-    let shader = gfx_compileProgram(fullQuad_vert,sky_frag);
+let gfx_createCube = (shader,s,format,frame) => {
     gl.useProgram(shader);
-
-    let s = 1024;
 
     let framebuffer = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
@@ -160,13 +156,13 @@ let gfx_createCubeMap = () =>{
     let cube = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, cube);
     for(var i=0; i<6; i++){
-        gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, gl.RGBA, s, s, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, gl.RGBA, s, s, 0, gl.RGBA, format, null);
     }
     for(var i=0; i<6;i++){
 
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, cube, 0);
         gl.viewport(0,0,s,s);
-
+        gl.uniform1f(gl.getUniformLocation(shader, 'u_slice'),frame);
         gl.uniformMatrix3fv(gl.getUniformLocation(shader, 'u_rot'), false,gfx_rotations[i]);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, gfx_fullQuadVertexBuffer);
@@ -183,39 +179,9 @@ let gfx_createCubeMap = () =>{
 }
 
 let gfx_createMotionCubeMap = FRAMES =>{
-
-    let shader = gfx_compileProgram(fullQuad_vert,curlBox_frag);
-    gl.useProgram(shader);
-
-    let s = 256;
-
-    
     let cube = [];
     for(var f=0; f<FRAMES; f++){
-        let framebuffer = gl.createFramebuffer();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-    
-    cube[f] = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cube[f]);
-    for(var i=0; i<6; i++){
-        gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, gl.RGBA, s, s, 0, gl.RGBA, 36193 /*gl.getExtension("OES_texture_half_float").HALF_FLOAT_OES*/, null);
-    }
-    for(var i=0; i<6;i++){
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X+i, cube[f], 0);
-        gl.viewport(0,0,s,s);
-
-        gl.uniformMatrix3fv(gl.getUniformLocation(shader, 'u_rot'), false,gfx_rotations[i]);
-        gl.uniform1f(gl.getUniformLocation(shader, 'u_slice'),f/FRAMES);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, gfx_fullQuadVertexBuffer);
-        let posLoc = gl.getAttribLocation(shader, "a_position");
-        gl.enableVertexAttribArray(posLoc);
-        gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-    }
-    gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        cube[f] = gfx_createCube(gfx_compileProgram(fullQuad_vert,curlBox_frag),256,36193,f/FRAMES);
     }
     return cube;
 }

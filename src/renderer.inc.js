@@ -9,7 +9,7 @@ let renderer_create = () => {
         , mipStack = math_range(0,9).map(gfx_createFrameBufferTexture)
         , swap = 0
         , frame = 0
-        , cubeTexture = gfx_createCubeMap()
+        , cubeTexture = gfx_createCube(gfx_compileProgram(fullQuad_vert,sky_frag),1024,gl.UNSIGNED_BYTE,0)
         , FRAMES = 32
         , motionCubeTexture = gfx_createMotionCubeMap(FRAMES)
         , projectionMatrix
