@@ -53,11 +53,9 @@ let terrainProg = gfx_compileProgram(terrain_vert,terrain_frag)
   , meshes = meshLoader_loadMeshesBlob(blobs[G_MODELS_BLOB])
 
 let scene = {
-    $cameraTransform: Transform_create(),
-    $place: 1,
-    $lap: 0,
+    $player: 0,
     $objects: terrainStuff.meshes.map($mesh => ({
-        $transform: Transform_create(),
+        $matrix: mat4_identity(),
         $mesh,
         $cull: 1,
         $prog: terrainProg,
@@ -93,7 +91,7 @@ let getPlayerObject = id => {
     if (!(id in playerObjectsById)) {
         playerObjectsById[id] = {
             $id: id,
-            $transform: Transform_create(),
+            $matrix: mat4_identity(),
             $mesh: meshes[G_MODEL_INDEX_ShipGameObject],
             $cull: 0,
             $prog: cubeProg
@@ -107,21 +105,18 @@ let getPlayerObject = id => {
 let updateSceneFromGameState = state => {
     let touchedIds = [];
 
-    state.$playerStates.forEach(p => {
+    state.$playerStates.map(p => {
         touchedIds.push(p.$id);
-        let obj = getPlayerObject(p.$id);
 
-        let orientation = quat_fromYawPitchRoll(p.$yaw, p.$pitch, p.$roll);
-        obj.$transform.p = p.$position;
-        obj.$transform.r = orientation;
-        obj.$transform.s = [G_SHIP_SCALE,G_SHIP_SCALE,-G_SHIP_SCALE];
+        let obj = getPlayerObject(p.$id);
+        obj.$matrix = mat4_fromRotationTranslationScale(
+            quat_fromYawPitchRoll(p.$yaw, p.$pitch, p.$roll),
+            p.$position,
+            [G_SHIP_SCALE,G_SHIP_SCALE,-G_SHIP_SCALE]
+        );
 
         if (state.$myId == p.$id) {
-            // TODO scene should just have a $thisPlayer on it
-            scene.$place = p.$place;
-            scene.$lap = p.$lap;
-            scene.$cameraTransform.p = p.$camPos;
-            scene.$cameraTransform.r = p.$camRot;
+            scene.$player = p;
         }
     });
 
@@ -133,7 +128,7 @@ let update = () => {
         let stateNow = state_lerp(lastState, currentState, (Date.now() - lastReceiveState) / G_TICK_MILLIS);
         updateSceneFromGameState(stateNow);
     }
-    renderer.render(scene);
+    if (scene.$player) renderer.render(scene);
     requestAnimationFrame(update);
 };
 update();

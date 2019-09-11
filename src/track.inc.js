@@ -17,7 +17,7 @@ let track_parseUploadedCurveHandles = pts => {
 
 let track_getLapPosition = pos3 =>
     track_nodes
-        .map((n,dx,dz) => (
+        .map((n,i,dx,dz) => (
             dx = pos3[0] - n[0]*G_TERRAIN_WORLDSPACE_SIZE,
             dz = pos3[2] - n[1]*G_TERRAIN_WORLDSPACE_SIZE,
             [dx*dx+dz*dz, i]

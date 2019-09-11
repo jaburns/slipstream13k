@@ -157,37 +157,28 @@ let state_updatePlayerOnDeck = playerState => {
 let state_updatePlayerRacing = playerState => {
     playerState.$sounds = [];
 
-    // Pitch controls
+    let runControls = (theta, omega, keyA, keyB, thetaMax, omegaMax, accel, decelRoll) => {
+        if (playerState.$keysDown.indexOf(keyA) >= 0) {
+            if (playerState[omega] < 0) playerState[omega] = 0;
+            playerState[omega] += accel;
+        } else if (playerState.$keysDown.indexOf(keyB) >= 0) {
+            if (playerState[omega] > 0) playerState[omega] = 0;
+            playerState[omega] -= accel;
+        } else if (decelRoll) {
+            playerState[omega] = playerState[theta] * (G_ROLL_RESTORE - 1);
+        } else {
+            playerState[omega] *= G_PITCH_RESTORE;
+        }
 
-    if (playerState.$keysDown.indexOf(G_KEYCODE_DOWN) >= 0) {
-        playerState.$pitchVel += G_PITCH_ACCEL;
-        if (playerState.$pitchVel > G_PITCH_MAX_VEL) playerState.$pitchVel = G_PITCH_MAX_VEL;
-    } else if (playerState.$keysDown.indexOf(G_KEYCODE_UP) >= 0) {
-        playerState.$pitchVel -= G_PITCH_ACCEL;
-        if (playerState.$pitchVel < -G_PITCH_MAX_VEL) playerState.$pitchVel = -G_PITCH_MAX_VEL;
-    }  else {
-        playerState.$pitchVel *= G_PITCH_RESTORE;
-    }
-    playerState.$pitch += playerState.$pitchVel;
-    if (playerState.$pitch >  G_PITCH_MAX) playerState.$pitch =  G_PITCH_MAX;
-    if (playerState.$pitch < -G_PITCH_MAX) playerState.$pitch = -G_PITCH_MAX;
+        playerState[omega] = Math.max(Math.min(playerState[omega], omegaMax), -omegaMax);
 
-    // Bank controls
+        playerState[theta] += playerState[omega];
 
-    if (playerState.$keysDown.indexOf(G_KEYCODE_LEFT) >= 0) {
-        if (playerState.$rollVel < 0) playerState.$rollVel = 0;
-        playerState.$rollVel += G_ROLL_ACCEL;
-        if (playerState.$rollVel > G_ROLL_MAX_VEL) playerState.$rollVel = G_ROLL_MAX_VEL;
-    } else if (playerState.$keysDown.indexOf(G_KEYCODE_RIGHT) >= 0) {
-        if (playerState.$rollVel > 0) playerState.$rollVel = 0;
-        playerState.$rollVel -= G_ROLL_ACCEL;
-        if (playerState.$rollVel < -G_ROLL_MAX_VEL) playerState.$rollVel = -G_ROLL_MAX_VEL;
-    }  else {
-        playerState.$rollVel = playerState.$roll * (G_ROLL_RESTORE - 1);
-    }
-    playerState.$roll += playerState.$rollVel;
-    if (playerState.$roll >  G_ROLL_MAX) playerState.$roll =  G_ROLL_MAX;
-    if (playerState.$roll < -G_ROLL_MAX) playerState.$roll = -G_ROLL_MAX;
+        playerState[theta] = Math.max(Math.min(playerState[theta], thetaMax), -thetaMax);
+    };
+    runControls('$pitch', '$pitchVel', G_KEYCODE_DOWN, G_KEYCODE_UP, G_PITCH_MAX, G_PITCH_MAX_VEL, G_PITCH_ACCEL, 0);
+    runControls('$roll', '$rollVel', G_KEYCODE_LEFT, G_KEYCODE_RIGHT, G_ROLL_MAX, G_ROLL_MAX_VEL, G_ROLL_ACCEL, 1);
+
     
     playerState.$yaw += G_BANK_TURN_SPEED * playerState.$roll;
 
@@ -212,12 +203,16 @@ let state_updatePlayerRacing = playerState => {
         playerState.$sounds.push(G_SOUNDID_HIT_WALL);
     }
 
+
+
     let cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, 0);
     let cameraSeekPos = vec3_minus(playerState.$position, playerState.$velocity.map(x => x*2));
     cameraSeekPos[1] += 0.5;
 
     playerState.$camPos = vec3_lerp(playerState.$camPos, cameraSeekPos, G_CAMERA_POS_LAG);
     playerState.$camRot = quat_slerp(playerState.$camRot, cameraSeekRot, G_CAMERA_ROT_LAG);
+
+
 
     playerState.$lapPosition = track_getLapPosition(playerState.$position);
 

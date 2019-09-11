@@ -111,16 +111,15 @@ let renderer_create = () => {
 
             gl.useProgram(obj.$prog);
 
-            let modelMatrix = Transform_toMatrix(obj.$transform);
             if (!obj.$oldModelMatrix)
-                obj.$oldModelMatrix = modelMatrix;
+                obj.$oldModelMatrix = obj.$matrix;
 
             let mvpOld = mat4_multiply(mat4_multiply(projectionMatrix,lastViewMatrix),obj.$oldModelMatrix);
-            let mvp = mat4_multiply(mat4_multiply(projectionMatrix,viewMatrix),modelMatrix);
+            let mvp = mat4_multiply(mat4_multiply(projectionMatrix,viewMatrix),obj.$matrix);
 
-            obj.$oldModelMatrix = modelMatrix;
+            obj.$oldModelMatrix = obj.$matrix;
 
-            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_model'), false, modelMatrix);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_model'), false, obj.$matrix);
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_view'), false, viewMatrix);
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_proj'), false, projectionMatrix);
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvp'), false, mvp);
@@ -157,11 +156,11 @@ let renderer_create = () => {
         projectionMatrixInv = mat4_perspectiveInverseHardCoded(aspectRatio);
 
         viewMatrix = mat4_multiply(
-            mat4_fromRotationTranslationScale(quat_conj(scene.$cameraTransform.r), [0,0,0], [1,1,1]),
-            mat4_fromRotationTranslationScale([0,0,0,1], scene.$cameraTransform.p.map(x=>-x), [1,1,1])
+            mat4_fromRotationTranslationScale(quat_conj(scene.$player.$camRot), [0,0,0], [1,1,1]),
+            mat4_fromRotationTranslationScale([0,0,0,1], scene.$player.$camPos.map(x=>-x), [1,1,1])
         );
         viewMatrixInv = 
-            mat4_fromRotationTranslationScale(scene.$cameraTransform.r, scene.$cameraTransform.p, [1,1,1]);
+            mat4_fromRotationTranslationScale(scene.$player.$camRot, scene.$player.$camPos, [1,1,1]);
 
         if(!lastViewMatrix) {
             lastViewMatrix = viewMatrix;

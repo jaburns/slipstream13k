@@ -28,7 +28,7 @@ let vec3_normalize = a => a.map(x=>x/vec3_length(a));
 let vec3_bufferMap = (buffer, fn) => {
     let result = [];
     for (let i = 0; i < buffer.length - 2; i += 3)
-        fn([buffer[i],buffer[i+1],buffer[i+2]]).forEach(x => result.push(x));
+        fn([buffer[i],buffer[i+1],buffer[i+2]]).map(x => result.push(x));
     return result;
 };
 
@@ -97,6 +97,8 @@ let mat4_mulNormal = (m, a) => [
     a[0]*m[2] + a[1]*m[6] + a[2]*m[10]
 ];
 
+let mat4_identity = () => math_range(0,16).map(x=>x%5?0:1);
+
 let mat4_multiply = (a, b) => 
     math_range(0,16).map((x,i,j) => (
         i=4*(x/4|0), j=x%4,
@@ -125,9 +127,3 @@ let mat4_fromRotationTranslationScale = (q, v, s) => {
             1
     ];
 };
-
-let Transform_create = () => ({ p: [0,0,0], r: [0,0,0,1], s: [1,1,1] });
-
-let Transform_toMatrix = self => mat4_fromRotationTranslationScale(self.r, self.p, self.s);
-
-let mat4_create = () => Transform_toMatrix(Transform_create());
