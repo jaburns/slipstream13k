@@ -32,46 +32,27 @@ let state_lerpPlayerStates = (a, b, t) => {
 let state_lerp = (a, b, t) => {
     return {
         $myId: b.$myId,
-        $playerStates: state_lerpPlayerStates(a.$playerStates, b.$playerStates, t)
+        $playerStates: state_lerpPlayerStates(a.$playerStates, b.$playerStates, t),
+        $raceCountdown: b.$raceCountdown
     };
 };
 
 // ===== Server code =============================================================
 
-let filterObject = (obj, props) => {
-    let result = {};
-    props.forEach(p => result[p] = obj[p]);
-    return result;
-};
-
 let state_createRoot = () => ({
     $myId: 0,
-    $sounds: [],
-    $raceCountdown: 30 * G_TICK_MILLIS,
+    $raceCountdown: G_SECONDS_TO_START * G_TICK_MILLIS,
     $playerStates: [],
 });
 
-let state_PLAYER_SHARED_PROPS = [
-    '$id',
-    '$position',
-    '$yaw',
-    '$pitch',
-    '$roll',
+let state_sockets = {};
 
-    '$place',
-    '$lap',
-    
-    '$camPos',
-    '$camRot',
-];
-
-let state_playerJoin = (state, $socket, $id) => {
+let state_playerJoin = (state, socket, $id) => {
     let newPlayer = {
-        $socket,
         $keysDown: [],
 
         $id,
-        $position: track_getStartPosition(state.$playerStates.filter(x=>x.$racing).length),
+        $position: track_getStartPosition(state.$playerStates.length),
         $yaw: track_getStartYaw(),
         $pitch: 0,
         $roll: 0,
@@ -79,62 +60,62 @@ let state_playerJoin = (state, $socket, $id) => {
         $camPos: [0,0,0],
         $camRot: [0,0,0,1],
 
-        $racing: state.$raceCountdown > 0,
         $rollVel: 0,
         $pitchVel: 0,
         $velocity: [0,0,0],
 
         $place: 0,
-
         $checkpoint: 0,
         $lap: 0,
-        $lapPosition: 0,
 
-        $sounds: [],
+        $toyYaw: track_getStartYaw(),
+        $toyPitch: 0,
     };
-
+    state_sockets[$id] = socket;
     state.$playerStates.push(newPlayer);
+    state.$raceCountdown = G_SECONDS_TO_START * G_TICK_MILLIS;
     return newPlayer;
 };
 
 let state_playerLeave = (state, player) => {
     state.$playerStates.splice(state.$playerStates.indexOf(player), 1);
+    delete state_sockets[player.$id];
 };
 
 let state_emitToAllPlayers = rootState => {
     let packet = {
         $raceCountdown: rootState.$raceCountdown,
-        $playerStates: rootState.$playerStates.map(x => filterObject(x, state_PLAYER_SHARED_PROPS))
+        $playerStates: rootState.$playerStates,
     };
 
     rootState.$playerStates.forEach(p => {
         packet.$myId = p.$id;
         packet.$sounds = rootState.$sounds.concat(p.$sounds);
-        p.$socket.emit(G_MSG_STATE_UPDATE, packet);
+        state_sockets[p.$id].emit(G_MSG_STATE_UPDATE, packet);
     });
 };
 
 let state_update = rootState => {
     rootState.$sounds = [];
 
-    if (rootState.$raceCountdown > 0) {
+    if (rootState.$raceCountdown > 0 && rootState.$playerStates.length > 1) {
         rootState.$raceCountdown--;
     }
 
     rootState.$playerStates.forEach(p => {
-        state_updatePlayerRacing(p, rootState.$raceCountdown < 1);
+        state_updatePlayer(p, rootState.$raceCountdown);
     });
 
     rootState.$playerStates.sort((a,b) => (b.$lap+b.$lapPosition) - (a.$lap+a.$lapPosition));
     rootState.$playerStates.map((p,i) => p.$place = i + 1);
 };
 
-let state_updatePlayerRacing = (playerState, raceStarted) => {
+let state_updatePlayer = (playerState, countdown) => {
     playerState.$sounds = [];
 
-    let cameraSeekPos, cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, 0);
+    let cameraSeekPos, cameraSeekRot;
 
-    if (raceStarted)
+    if (countdown < 1)
     {
         let runControls = (theta, omega, keyA, keyB, thetaMax, omegaMax, accel, decelRoll) => {
             if (playerState.$keysDown.indexOf(keyA) >= 0) {
@@ -183,9 +164,21 @@ let state_updatePlayerRacing = (playerState, raceStarted) => {
         }
 
         cameraSeekPos = vec3_minus(playerState.$position, playerState.$velocity.map(x => x*2));
+        cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, 0);
     }
     else 
     {
+    //  let fn = (a,b,c) => playerState.$keysDown.indexOf(a) >= 0 && (playerState[b] += c);
+    //  fn(G_KEYCODE_DOWN ,'$toyPitch', .1);
+    //  fn(G_KEYCODE_UP   ,'$toyPitch',-.1);
+    //  fn(G_KEYCODE_RIGHT,'$toyYaw',  -.1);
+    //  fn(G_KEYCODE_LEFT, '$toyYaw',   .1);
+        if (playerState.$keysDown.indexOf(G_KEYCODE_DOWN) >= 0) playerState.$toyPitch += 0.1;
+        if (playerState.$keysDown.indexOf(G_KEYCODE_UP) >= 0) playerState.$toyPitch -= 0.1;
+        if (playerState.$keysDown.indexOf(G_KEYCODE_RIGHT) >= 0) playerState.$toyYaw -= 0.1;
+        if (playerState.$keysDown.indexOf(G_KEYCODE_LEFT) >= 0) playerState.$toyYaw += 0.1;
+
+        cameraSeekRot = quat_fromYawPitchRoll(playerState.$toyYaw, playerState.$toyPitch, 0);
         cameraSeekPos = vec3_plus(playerState.$position, quat_mulVec3(cameraSeekRot, [0,0,1]));
     }
 
@@ -196,9 +189,10 @@ let state_updatePlayerRacing = (playerState, raceStarted) => {
 
     playerState.$lapPosition = track_getLapPosition(playerState.$position);
 
-    if (playerState.$checkpoint == 0 && playerState.$lapPosition > .25 && playerState.$lapPosition < .50) playerState.$checkpoint = 1;
-    if (playerState.$checkpoint == 1 && playerState.$lapPosition > .50 && playerState.$lapPosition < .75) playerState.$checkpoint = 2;
-    if (playerState.$checkpoint == 2 && playerState.$lapPosition > .75 && playerState.$lapPosition < 1.0) playerState.$checkpoint = 3;
+    for (let i = 0; i < 3; ++i) 
+        if (playerState.$checkpoint == i && playerState.$lapPosition > (i+1)/4 && playerState.$lapPosition < (i+2)/4)
+            playerState.$checkpoint = i+1;
+
     if (playerState.$checkpoint == 3 && playerState.$lapPosition < .25 && playerState.$lapPosition > 0.0) {
         playerState.$checkpoint = 0;
         playerState.$lap++;

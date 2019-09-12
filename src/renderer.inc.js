@@ -24,13 +24,14 @@ let renderer_create = () => {
     let createTextTexture = () => {
         let ctx = gfx_createCanvas2d(64,64);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 32px sans-serif';
+        ctx.font = 'bold 16px sans-serif';
 
         let texture = gl.createTexture();
 
-        let update = str => {
+        let update = (str0, str1) => {
             ctx.clearRect(0, 0, 64, 64);
-            ctx.fillText(str, 2, 32);
+            ctx.fillText(str0, 2, 46);
+            ctx.fillText(str1, 2, 62);
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, ctx.canvas);
         };
@@ -47,8 +48,8 @@ let renderer_create = () => {
     let textProg = gfx_compileProgram(text_vert, text_frag);
     let textTex = createTextTexture();
 
-    let drawText = txt => {
-        textTex.$update(txt);
+    let drawText = (txt0, txt1) => {
+        textTex.$update(txt0, txt1);
 
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -242,7 +243,7 @@ let renderer_create = () => {
         });
         swap = nextswap;
 
-        drawText(scene.$place + " : " + scene.$lap);
+        drawText(scene.$text0, scene.$text1);
     };
 
     return {

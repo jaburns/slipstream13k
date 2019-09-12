@@ -115,6 +115,19 @@ let roomCode, Z = () =>
                 $prog: cubeProg
             };
         });
+
+        if (state.$raceCountdown > 0) {
+            if (state.$playerStates.length < 2) {
+                scene.$text0 = 'awaiting'
+                scene.$text1 = 'another';
+            } else {
+                scene.$text0 = '';
+                scene.$text1 = state.$raceCountdown;
+            }
+        } else {
+            scene.$text0 = scene.$player.$place + 'th';
+            scene.$text1 = 'Lap: ' + (scene.$player.$lap+1)+'/3';
+        }
     };
 
     let update = () => {
@@ -134,6 +147,6 @@ I.onkeypress = e => {
     if (e.keyCode == 13) {
         roomCode = I.value.trim();
         P.innerText='Loading...';
-        setTimeout(Z, 0);
+        setTimeout(Z, 9);
     }
 };
