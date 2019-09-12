@@ -353,6 +353,9 @@ const processFile = (replacements, file, code) => {
             unsafe_proto: true,
             unsafe_regexp: true,
             unsafe_undefined:true,
+        },
+        mangle: {
+            reserved: ['Z']
         }
     });
 

@@ -1,18 +1,19 @@
 let track_nodes;
 
-let track_parseUploadedCurveHandles = (pts) => (
-    track_nodes = [],
-    math_range(0, pts.length / 6).forEach((i,j) => (
-        i*=6,
-        j=(i+6) % pts.length,
-        math_range(0, 20).forEach(t =>
+let track_parseUploadedCurveHandles = pts => {
+    track_nodes = [];
+
+    let t,j,i,bezier = (a, b, c, d, t, u) => u*u*u*a + 3*u*u*t*b + 3*u*t*t*c + t*t*t*d;
+
+    for (i = 0; i < pts.length; i += 6) {
+        j = (i + 6) % pts.length;
+        for (t = 0; t < 1; t += .05)
             track_nodes.push([
-                bezierMap(pts[i], pts[i+2], pts[i+4], pts[j], t/20, 1-t/20),
-                bezierMap(pts[i+1], pts[i+3], pts[i+5], pts[j+1], t/20, 1-t/20)
-            ])
-        )
-    ))
-);
+                bezier(pts[i], pts[i+2], pts[i+4], pts[j], t, 1-t),
+                bezier(pts[i+1], pts[i+3], pts[i+5], pts[j+1], t, 1-t)
+            ]);
+    }
+};
 
 let track_getLapPosition = pos3 =>
     track_nodes
