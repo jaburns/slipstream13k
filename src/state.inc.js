@@ -22,11 +22,8 @@ let state_lerpPlayerStates = (a, b, t) => {
             $pitch: vec3_lerp([prev.$pitch], [s.$pitch], t)[0],
             $roll: vec3_lerp([prev.$roll], [s.$roll], t)[0],
 
-            $boost: vec3_lerp([prev.$boost], [s.$boost], t)[0],
-
             $place: s.$place,
             $lap: s.$lap,
-
         });
     });
 
@@ -67,9 +64,7 @@ let state_createRoot = () => ({
     $bullets: [],
 });
 
-// add boost meter
-// allow player to boost
-// when race finish do a thing
+// TODO when race finish do a thing
 
 let state_bulletNewId = 0;
 
@@ -87,6 +82,7 @@ let state_playerJoin = (state, socket, $id) => {
 
         $camPos: [0,0,0],
         $camRot: [0,0,0,1],
+        $camShake: 0,
 
         $rollVel: 0,
         $pitchVel: 0,
@@ -140,9 +136,10 @@ let state_update = rootState => {
 
     rootState.$playerStates.forEach(p => {
         rootState.$playerStates.forEach(q => {
-            if (p != q) {
-                // bounce player p against q
-            } 
+            if (p != q && vec3_length(vec3_minus(p.$position, q.$position)) < G_SHIP_RADIUS) {
+                // TODO collision resolution
+                console.log('a collision between players');
+            }
         })
     });
 
@@ -159,6 +156,8 @@ let state_updatePlayer = (state, playerState, countdown) => {
     playerState.$sounds = [];
 
     let cameraSeekPos, cameraSeekRot;
+
+    let random = () => Math.random() - .5;
 
     if (countdown < 1)
     {
@@ -209,6 +208,7 @@ let state_updatePlayer = (state, playerState, countdown) => {
         if (col) {
             playerState.$velocity = col.map(x=> x * G_COLLISION_SPEED_LOSS);
             playerState.$sounds.push(G_SOUNDID_HIT_WALL);
+            playerState.$camShake = 1;
         }
 
         cameraSeekPos = vec3_minus(playerState.$position, vec3_normalize(playerState.$velocity).map(x => x*G_CAMERA_Z_OFFSET));
@@ -219,8 +219,8 @@ let state_updatePlayer = (state, playerState, countdown) => {
         } else if (playerState.$keysDown.indexOf(G_KEYCODE_CTRL) >= 0) {
             playerState.$gunCooldown = G_GUN_COOLDOWN_FRAMES;
             let bulletRot = quat_fromYawPitchRoll(
-                playerState.$yaw + (Math.random()-.5)*G_GUN_INACCURACY,
-                playerState.$pitch + (Math.random()-.5)*G_GUN_INACCURACY,
+                playerState.$yaw + random()*G_GUN_INACCURACY,
+                playerState.$pitch + random()*G_GUN_INACCURACY,
                 0
             );
             state.$bullets.push({
@@ -231,6 +231,16 @@ let state_updatePlayer = (state, playerState, countdown) => {
                 $velocity: quat_mulVec3(bulletRot, [0,0,-1]),
             });
         }
+
+        state.$bullets.forEach(b => {
+            if (b.$ownerId != playerState.$id) {
+                if (vec3_length(vec3_minus(b.$position, playerState.$position)) < G_SHIP_AS_FAR_AS_BULLETS_ARE_CONCERNED_RADIUS) {
+                    playerState.$velocity = playerState.$velocity.map(x => x * G_BULLET_HIT_SPEED_LOSS);
+                    playerState.$sounds.push(G_SOUNDID_HIT_WALL);
+                    playerState.$camShake = 1;
+                }
+            }
+        });
     }
     else 
     {
@@ -246,7 +256,16 @@ let state_updatePlayer = (state, playerState, countdown) => {
     cameraSeekPos[1] += G_CAMERA_Y_OFFSET;
 
     playerState.$camPos = vec3_lerp(playerState.$camPos, cameraSeekPos, G_CAMERA_POS_LAG);
-    playerState.$camRot = vec3_lerp(playerState.$camRot, cameraSeekRot, G_CAMERA_ROT_LAG);
+    playerState.$camRot = quat_mul(
+        quat_fromYawPitchRoll(
+            random()*G_CAMERA_SHAKE_MAGNITUDE*playerState.$camShake,
+            random()*G_CAMERA_SHAKE_MAGNITUDE*playerState.$camShake,
+            random()*G_CAMERA_SHAKE_MAGNITUDE*playerState.$camShake,
+        ),
+        vec3_lerp(playerState.$camRot, cameraSeekRot, G_CAMERA_ROT_LAG)
+    );
+
+    playerState.$camShake *= G_CAMERA_SHAKE_DECAY;
 
     playerState.$lapPosition = track_getLapPosition(playerState.$position);
 
@@ -254,7 +273,7 @@ let state_updatePlayer = (state, playerState, countdown) => {
         if (playerState.$checkpoint == i && playerState.$lapPosition > (i+1)/4 && playerState.$lapPosition < (i+2)/4)
             playerState.$checkpoint = i+1;
 
-    if (playerState.$checkpoint == 3 && playerState.$lapPosition < .25 && playerState.$lapPosition > 0.0) {
+    if (playerState.$checkpoint == 3 && playerState.$lapPosition < .25 && playerState.$lapPosition >= 0.0) {
         playerState.$checkpoint = 0;
         playerState.$lap++;
     }
