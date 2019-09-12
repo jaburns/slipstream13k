@@ -54,8 +54,6 @@ let quat_fromYawPitchRoll = (yaw, pitch, roll) => {
     );
 };
 
-let quat_slerp = vec3_lerp;
-
 let quat_mulVec3 = (q, v) => mat4_mulNormal(mat4_fromRotationTranslationScale(q,[0,0,0],[1,1,1]), v);
 
 /*

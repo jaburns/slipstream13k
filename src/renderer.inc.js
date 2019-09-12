@@ -97,7 +97,7 @@ let renderer_create = () => {
         };
         gl.depthMask(true);
 
-        scene.$objects.concat(scene.$ships).forEach(obj => {
+        scene.$static.concat(scene.$dynamic).forEach(obj => {
             if (obj.$cull) gl.enable(gl.CULL_FACE);
             else gl.disable(gl.CULL_FACE);
 

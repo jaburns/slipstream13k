@@ -65,7 +65,7 @@ let Z = (roomCode, rez) =>
 
     let scene = {
         $player: 0,
-        $objects: terrainStuff.meshes.map(($mesh,i) => ({
+        $static: terrainStuff.meshes.map(($mesh,i) => ({
             $id: 't'+i,
             $matrix: mat4_identity(),
             $mesh,
@@ -73,7 +73,7 @@ let Z = (roomCode, rez) =>
             $prog: terrainProg,
             $tex: terrainStuff.$heightMapTexture
         })),
-        $ships: []
+        $dynamic: []
     };
 
 
@@ -106,7 +106,7 @@ let Z = (roomCode, rez) =>
     };
 
     let updateSceneFromGameState = state => {
-        scene.$ships = state.$playerStates.map(p => {
+        scene.$dynamic = state.$playerStates.map(p => {
             if (state.$myId == p.$id) 
                 scene.$player = p;
 
@@ -121,7 +121,17 @@ let Z = (roomCode, rez) =>
                 $cull: 0,
                 $prog: cubeProg
             };
-        });
+        }).concat(state.$bullets.map(b => ({
+            $id: b.$id,
+            $matrix: mat4_fromRotationTranslationScale(
+                b.$rotation,
+                b.$position,
+                [0.1*G_SHIP_SCALE,0.1*G_SHIP_SCALE,-G_SHIP_SCALE]
+            ),
+            $mesh: meshes[G_MODEL_INDEX_ShipGameObject],
+            $cull: 0,
+            $prog: cubeProg
+        })));
 
         if (state.$raceCountdown > 0) {
             if (state.$playerStates.length < 2) {

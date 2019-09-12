@@ -4,40 +4,6 @@
 
 // ===== Client code =============================================================
 
-
-/*
-let state_lerpIdThings = fn => (a, b, t) => {
-    let result = [];
-
-    b.forEach(s => {
-        let prev = s;
-        a.forEach(s0 => s0.$id == s.$id && (prev = s0));
-        result.push(fn(prev, s, t));
-    });
-
-    return result;
-};
-
-let state_lerpPlayerStates = state_lerpIdThings((a, b, t) => ({
-    $id: b.$id,
-    $position: vec3_lerp(a.$position, b.$position, t), 
-    $yaw: vec3_lerp([a.$yaw], [b.$yaw], t)[0],
-    $pitch: vec3_lerp([a.$pitch], [b.$pitch], t)[0],
-    $roll: vec3_lerp([a.$roll], [b.$roll], t)[0],
-
-    $place: b.$place,
-    $lap: b.$lap,
-
-    $camPos: vec3_lerp(a.$camPos, b.$camPos, t), 
-    $camRot: quat_slerp(a.$camRot, b.$camRot, t), 
-}));
-
-let state_lerpBullets = (a, b, t) => state_lerpIdThings((a, b, t) => ({
-    $id: b.$id,
-    $position: vec3_lerp(a.$position, b.$position, t), 
-}));
-*/
-
 let state_lerpPlayerStates = (a, b, t) => {
     let result = [];
 
@@ -55,7 +21,7 @@ let state_lerpPlayerStates = (a, b, t) => {
             $lap: s.$lap,
 
             $camPos: vec3_lerp(prev.$camPos, s.$camPos, t), 
-            $camRot: quat_slerp(prev.$camRot, s.$camRot, t), 
+            $camRot: vec3_lerp(prev.$camRot, s.$camRot, t), 
         });
     });
 
@@ -71,6 +37,7 @@ let state_lerpBullets = (a, b, t) => {
         result.push({
             $id: s.$id,
             $position: vec3_lerp(prev.$position, s.$position, t), 
+            $rotation: s.$rotation,
         });
     });
 
@@ -101,6 +68,8 @@ let state_createRoot = () => ({
 // add boost meter
 // allow player to boost
 // when race finish do a thing
+
+let state_bulletNewId = 0;
 
 let state_sockets = {};
 
@@ -161,14 +130,19 @@ let state_update = rootState => {
     }
 
     rootState.$playerStates.forEach(p => {
-        state_updatePlayer(p, rootState.$raceCountdown);
+        state_updatePlayer(rootState, p, rootState.$raceCountdown);
     });
+
+    rootState.$bullets.forEach(p => {
+        p.$position = vec3_plus(p.$position, p.$velocity);
+    });
+    rootState.$bullets = rootState.$bullets.filter(p => !collision_test(p.$position, p.$velocity));
 
     rootState.$playerStates.sort((a,b) => (b.$lap+b.$lapPosition) - (a.$lap+a.$lapPosition));
     rootState.$playerStates.map((p,i) => p.$place = i + 1);
 };
 
-let state_updatePlayer = (playerState, countdown) => {
+let state_updatePlayer = (state, playerState, countdown) => {
     playerState.$sounds = [];
 
     let cameraSeekPos, cameraSeekRot;
@@ -223,14 +197,19 @@ let state_updatePlayer = (playerState, countdown) => {
 
         cameraSeekPos = vec3_minus(playerState.$position, playerState.$velocity.map(x => x*2));
         cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, 0);
+
+        if (playerState.$keysDown.indexOf(G_KEYCODE_CTRL) >= 0) {
+            state.$bullets.push({
+                $id: 'b'+(state_bulletNewId++),
+                $ownerId: playerState.$id,
+                $position: playerState.$position.map(x=>x),
+                $rotation: cameraSeekRot.map(x=>x),
+                $velocity: quat_mulVec3(cameraSeekRot, [0,0,-1]),
+            });
+        }
     }
     else 
     {
-    //  let fn = (a,b,c) => playerState.$keysDown.indexOf(a) >= 0 && (playerState[b] += c);
-    //  fn(G_KEYCODE_DOWN ,'$toyPitch', .1);
-    //  fn(G_KEYCODE_UP   ,'$toyPitch',-.1);
-    //  fn(G_KEYCODE_RIGHT,'$toyYaw',  -.1);
-    //  fn(G_KEYCODE_LEFT, '$toyYaw',   .1);
         if (playerState.$keysDown.indexOf(G_KEYCODE_DOWN) >= 0) playerState.$toyPitch += 0.1;
         if (playerState.$keysDown.indexOf(G_KEYCODE_UP) >= 0) playerState.$toyPitch -= 0.1;
         if (playerState.$keysDown.indexOf(G_KEYCODE_RIGHT) >= 0) playerState.$toyYaw -= 0.1;
@@ -243,7 +222,7 @@ let state_updatePlayer = (playerState, countdown) => {
     cameraSeekPos[1] += 0.5;
 
     playerState.$camPos = vec3_lerp(playerState.$camPos, cameraSeekPos, G_CAMERA_POS_LAG);
-    playerState.$camRot = quat_slerp(playerState.$camRot, cameraSeekRot, G_CAMERA_ROT_LAG);
+    playerState.$camRot = vec3_lerp(playerState.$camRot, cameraSeekRot, G_CAMERA_ROT_LAG);
 
     playerState.$lapPosition = track_getLapPosition(playerState.$position);
 
