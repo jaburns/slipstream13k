@@ -72,12 +72,6 @@ let quat_mulVec3 = (q, v) => mat4_mulNormal(mat4_fromRotationTranslationScale(q,
     };
 */
 
-// FOV = PI / 2, near = 0.2, far = 100
-let mat4_perspectiveHardCoded = aspect =>
-    [1/aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1.004, -1,     0, 0, -0.4008, 0];
-let mat4_perspectiveInverseHardCoded = aspect =>
-    [  aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0,      0, -2.495, 0, 0, -1,      2.505];
-
 // Transform a vec3 my a mat4. w is assumed 1 in the vec4 used internally.
 let mat4_mulPosition = (m, a) => {
     let x = a[0], y = a[1], z = a[2];

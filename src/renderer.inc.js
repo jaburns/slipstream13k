@@ -4,20 +4,21 @@ let renderer_create = () => {
         , reprojectProg = gfx_compileProgram(reproject_vert,reproject_frag)
         , copyProg = gfx_compileProgram(fullQuad_vert,copy_frag)
         , downDepthProg = gfx_compileProgram(fullQuad_vert, downDepth_frag)
-        , frameBuffers = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(true)]
+        , frameBuffers = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(0,0,true)]
         , depthStack = math_range(0,9).map(gfx_createFrameBufferTexture)
-        , mipStack = math_range(0,9).map(gfx_createFrameBufferTexture)
         , swap = 0
         , frame = 0
         , cubeTexture = gfx_createCube(gfx_compileProgram(fullQuad_vert,sky_frag),1024,gl.UNSIGNED_BYTE,0)
         , FRAMES = 32
         , motionCubeTexture = gfx_createMotionCubeMap(FRAMES)
-        , projectionMatrix
-        , projectionMatrixInv
+        , projectionMatrix =    [G_ASPECT_RATIO_INV, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1.004, -1,     0, 0, -0.4008, 0]
+        , projectionMatrixInv = [ G_ASPECT_RATIO, 0, 0, 0, 0, 1, 0, 0, 0, 0,      0, -2.495, 0, 0, -1,      2.505]
         , viewMatrix
         , viewMatrixInv
         , lastViewMatrix
-        , aspectRatio = 1;
+        , _mw = globalWidth
+        , _mh = globalHeight
+        , mipStack = math_range(0,9).map(() => gfx_createFrameBufferTexture(_mw>>=1, _mh>>=1))
 
     let killTranslation = (x,i) => i > 11 && i < 15 ? 0 : x;
 
@@ -56,21 +57,6 @@ let renderer_create = () => {
         gl.useProgram(textProg);
         gfx_renderBuffer(textProg, {t:textTex.$texture,w:1,h:1});
         gl.disable(gl.BLEND);
-    };
-
-    let resize = (w, h) => {
-        frameBuffers[0].r(w, h);
-        frameBuffers[1].r(w, h);
-        frameBuffers[2].r(w, h);
-
-        gl.viewport(0, 0, w, h);
-        aspectRatio = w / h;
-        for(i=0; i<mipStack.length; i++){
-            depthStack[i].r(w,h);
-            w = ~~(w/2);
-            h = ~~(h/2);
-            mipStack[i].r(w,h);
-        }
     };
 
     let oldModelMatrices = {};
@@ -124,7 +110,7 @@ let renderer_create = () => {
 
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_model'), false, obj.$matrix);
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_view'), false, viewMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_proj'), false, projectionMatrix);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_proj'), false, projectionMatrix); // TODO maybe inline projection matrix in shaders since it's constant now.
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvp'), false, mvp);
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvpOld'), false, mvpOld);
 
@@ -151,12 +137,9 @@ let renderer_create = () => {
         });
     };
 
-    let render = scene => {
-        gl.viewport(0,0,innerWidth,innerHeight);
+    return scene => {
+        gl.viewport(0,0,globalWidth, globalHeight);
         nextswap = (swap+1)%2;
-        
-        projectionMatrix = mat4_perspectiveHardCoded(aspectRatio);
-        projectionMatrixInv = mat4_perspectiveInverseHardCoded(aspectRatio);
 
         viewMatrix = mat4_multiply(
             mat4_fromRotationTranslationScale(quat_conj(scene.$player.$camRot), [0,0,0], [1,1,1]),
@@ -231,7 +214,7 @@ let renderer_create = () => {
             gl.uniform1i(gl.getUniformLocation(reprojectProg, "u_cube2"), 4);
 
             gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_interpolate"), (frame % subFrames)/subFrames);
-            gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_aspect"), aspectRatio);
+            gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_aspect"), G_ASPECT_RATIO);
         });
 
         let downed = gfx_downSample(frameBuffers[nextswap],5,mipStack);
@@ -244,10 +227,5 @@ let renderer_create = () => {
         swap = nextswap;
 
         drawText(scene.$text0, scene.$text1);
-    };
-
-    return {
-        render,
-        resize
     };
 };

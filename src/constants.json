@@ -1,5 +1,7 @@
 {
     "G_TICK_MILLIS": 33,
+    "G_ASPECT_RATIO": 1.778,
+    "G_ASPECT_RATIO_INV": 0.5625,
 
     "G_NEAR_PLANE": 0.2,
     "G_FAR_PLANE": 100,

@@ -7,10 +7,25 @@ gl.getExtension("OES_texture_half_float");
 gl.clearColor(0, 0, 0, 1);
 
 C.style.display='none';
-C.style.left = C.style.top = 0;
 
-let roomCode, Z = () =>
+let globalWidth, globalHeight;
+
+let resizeFunc = () => {
+    let wide = innerHeight / innerWidth < .5625;
+    let s = C.style;
+
+    s.width = wide ? 'auto' : '100%';
+    s.height = wide ? '100%' : 'auto';
+    s.position = 'absolute';
+    s.left = wide ? (innerWidth - C.clientWidth) / 2 : '0';
+    s.top = wide ? '0' : (innerHeight - C.clientHeight) / 2;
+};
+
+let Z = (roomCode, rez) =>
 {
+    C.width = globalWidth = rez/.5625;
+    C.height = globalHeight = rez;
+
 //__include soundbox-player.inc.js
 
 //__include song.inc.js
@@ -31,13 +46,7 @@ let roomCode, Z = () =>
       , lastState
       , currentState
       , soundEffects = []
-      , renderer = renderer_create()
-      , resizeFunc = () => {
-            let w = innerWidth, h = innerHeight;
-            C.width = w;
-            C.height = h;
-            renderer.resize(w, h);
-        };
+      , render = renderer_create()
 
     sbPlay(song);
     [
@@ -46,9 +55,7 @@ let roomCode, Z = () =>
     ]
     .map((x,i) => sbPlay(x, x=>soundEffects[i]=x));
 
-    C.style.display='block';
-    onresize = resizeFunc;
-    resizeFunc();
+    C.style.display='inline-block';
 
     let terrainProg = gfx_compileProgram(terrain_vert,terrain_frag)
       , cubeProg = gfx_compileProgram(cube_vert, cube_frag)
@@ -135,18 +142,23 @@ let roomCode, Z = () =>
             let stateNow = state_lerp(lastState, currentState, (Date.now() - lastReceiveState) / G_TICK_MILLIS);
             updateSceneFromGameState(stateNow);
         }
-        if (scene.$player) renderer.render(scene);
+        if (scene.$player) render(scene);
         requestAnimationFrame(update);
     };
 
     update();
     connect();
+
+    document.body.style.backgroundColor = '#000';
+    resizeFunc();
 };
 
 I.onkeypress = e => {
     if (e.keyCode == 13) {
-        roomCode = I.value.trim();
+        let code = I.value.trim();
         P.innerText='Loading...';
-        setTimeout(Z, 9);
+        setTimeout(() => Z(code, 480), 9);
     }
 };
+
+onresize = resizeFunc;

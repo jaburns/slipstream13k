@@ -55,8 +55,7 @@ let _terrainGen_renderHeightMap = (trackCanvas, uniforms) => {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, trackCanvas);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
-    let framebuffer = gfx_createFrameBufferTexture();
-    framebuffer.r(2048, 2048);
+    let framebuffer = gfx_createFrameBufferTexture(2048,2048);
 
     let shader = gfx_compileProgram(fullQuad_vert, terrainMap_frag);
 
@@ -71,13 +70,9 @@ let _terrainGen_renderHeightMap = (trackCanvas, uniforms) => {
         }
     });
 
-    let mipStack = math_range(0,6).map(gfx_createFrameBufferTexture);
-    s = 2048;
-    for(i=0;i<mipStack.length;i++){
-        // TODO is this a typo?
-        s = ~~(2048/2);
-        mipStack[i].r(s,s);
-    }
+    //let _ms = 2048, mipStack = math_range(0,6).map(() => gfx_createFrameBufferTexture(_ms>>=1,_ms));
+    let _ms = 2048, mipStack = math_range(0,6).map(() => gfx_createFrameBufferTexture(1024,1024));
+
     return gfx_downSample(framebuffer,3,mipStack);
 };
 
@@ -178,8 +173,7 @@ let _arrayBufferToBase64 = buffer => {
 
 let terrainGen_serializeHeightMap = heightMapTexture => {
     let shader = gfx_compileProgram(fullQuad_vert, copyRaw_frag);
-    let framebuffer = gfx_createFrameBufferTexture();
-    framebuffer.r(G_TERRAIN_UPLOAD_RESOLUTION, G_TERRAIN_UPLOAD_RESOLUTION);
+    let framebuffer = gfx_createFrameBufferTexture(G_TERRAIN_UPLOAD_RESOLUTION, G_TERRAIN_UPLOAD_RESOLUTION);
     gfx_renderBuffer(shader, {t:heightMapTexture,w:G_TERRAIN_UPLOAD_RESOLUTION,h:G_TERRAIN_UPLOAD_RESOLUTION}, framebuffer);
 
     let arr = new Float32Array(G_TERRAIN_UPLOAD_RESOLUTION * G_TERRAIN_UPLOAD_RESOLUTION * 4);
