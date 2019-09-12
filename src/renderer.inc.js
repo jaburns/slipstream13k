@@ -1,5 +1,5 @@
-let shader = gfx_compileProgram(fullQuad_vert,sky_frag), renderer_create = () => {
-         let skyboxProg = gfx_compileProgram(skybox_vert, skybox_frag)
+let renderer_create = () => {
+    let skyboxProg = gfx_compileProgram(skybox_vert, skybox_frag)
         , linProg = gfx_compileProgram(fullQuad_vert,linearize_frag)
         , reprojectProg = gfx_compileProgram(reproject_vert,reproject_frag)
         , copyProg = gfx_compileProgram(fullQuad_vert,copy_frag)
@@ -9,7 +9,7 @@ let shader = gfx_compileProgram(fullQuad_vert,sky_frag), renderer_create = () =>
         , mipStack = math_range(0,9).map(gfx_createFrameBufferTexture)
         , swap = 0
         , frame = 0
-        , cubeTexture = gfx_createCube(1024,gl.UNSIGNED_BYTE,0)
+        , cubeTexture = gfx_createCube(gfx_compileProgram(fullQuad_vert,sky_frag),1024,gl.UNSIGNED_BYTE,0)
         , FRAMES = 32
         , motionCubeTexture = gfx_createMotionCubeMap(FRAMES)
         , projectionMatrix
@@ -52,8 +52,8 @@ let shader = gfx_compileProgram(fullQuad_vert,sky_frag), renderer_create = () =>
 
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-        shader=textProg;
-        gfx_renderBuffer({t:textTex.$texture,w:1,h:1});
+        gl.useProgram(textProg);
+        gfx_renderBuffer(textProg, {t:textTex.$texture,w:1,h:1});
         gl.disable(gl.BLEND);
     };
 
@@ -78,27 +78,28 @@ let shader = gfx_compileProgram(fullQuad_vert,sky_frag), renderer_create = () =>
         gl.enable(gl.DEPTH_TEST);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.blendFunc(gl.ONE,gl.ZERO);
+        
         gl.depthMask(false);
         {
             let invertProjection = mat4_multiply(viewMatrixInv, projectionMatrixInv);
             
             let lastProjection = mat4_multiply(projectionMatrix,lastViewMatrix);
             let reproject = mat4_multiply(lastProjection,invertProjection);
-            
-            shader = skyboxProg;
-            gl.useProgram(shader);
+
+            gl.useProgram(skyboxProg);
+
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
-            gl.uniform1i(gl.getUniformLocation(shader, "u_tex"), 0);
+            gl.uniform1i(gl.getUniformLocation(skyboxProg, "u_tex"), 0);
 
             let rvi = viewMatrixInv.map(killTranslation);
             let inv_vp = mat4_multiply(rvi,projectionMatrixInv);
 
-            gl.uniformMatrix4fv(gl.getUniformLocation(shader, 'u_invVp'), false, inv_vp);
-            gl.uniformMatrix4fv(gl.getUniformLocation(shader, 'u_reproject'), false, reproject);
+            gl.uniformMatrix4fv(gl.getUniformLocation(skyboxProg, 'u_invVp'), false, inv_vp);
+            gl.uniformMatrix4fv(gl.getUniformLocation(skyboxProg, 'u_reproject'), false, reproject);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, gfx_fullQuadVertexBuffer);
-            let posLoc = gl.getAttribLocation(shader, "a_position");
+            let posLoc = gl.getAttribLocation(skyboxProg, "a_position");
             gl.enableVertexAttribArray(posLoc);
             gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -110,8 +111,7 @@ let shader = gfx_compileProgram(fullQuad_vert,sky_frag), renderer_create = () =>
             if (obj.$cull) gl.enable(gl.CULL_FACE);
             else gl.disable(gl.CULL_FACE);
 
-            shader=obj.$prog;
-            gl.useProgram(shader);
+            gl.useProgram(obj.$prog);
 
             if (!oldModelMatrices[obj.$id])
                 oldModelMatrices[obj.$id] = obj.$matrix;
@@ -121,14 +121,14 @@ let shader = gfx_compileProgram(fullQuad_vert,sky_frag), renderer_create = () =>
 
             oldModelMatrices[obj.$id] = obj.$matrix;
 
-            gl.uniformMatrix4fv(gl.getUniformLocation(shader, 'u_model'), false, obj.$matrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(shader, 'u_view'), false, viewMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(shader, 'u_proj'), false, projectionMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(shader, 'u_mvp'), false, mvp);
-            gl.uniformMatrix4fv(gl.getUniformLocation(shader, 'u_mvpOld'), false, mvpOld);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_model'), false, obj.$matrix);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_view'), false, viewMatrix);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_proj'), false, projectionMatrix);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvp'), false, mvp);
+            gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvpOld'), false, mvpOld);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, obj.$mesh.v);
-            let posLoc = gl.getAttribLocation(shader, 'a_position');
+            let posLoc = gl.getAttribLocation(obj.$prog, 'a_position');
             gl.enableVertexAttribArray(posLoc);
             gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
 
@@ -140,7 +140,7 @@ let shader = gfx_compileProgram(fullQuad_vert,sky_frag), renderer_create = () =>
 
             if (obj.$mesh.n) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, obj.$mesh.n);
-                posLoc = gl.getAttribLocation(shader, 'a_normal');
+                posLoc = gl.getAttribLocation(obj.$prog, 'a_normal');
                 gl.enableVertexAttribArray(posLoc);
                 gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
             }
@@ -177,72 +177,68 @@ let shader = gfx_compileProgram(fullQuad_vert,sky_frag), renderer_create = () =>
 
         gl.disable(gl.DEPTH_TEST);
 
-        shader = linProg;
-        gfx_renderBuffer(frameBuffers[2].d,depthStack[0],()=>{
-            gl.uniform3f(gl.getUniformLocation(shader, 'u_clip'), G_NEAR_PLANE*G_FAR_PLANE, G_NEAR_PLANE-G_FAR_PLANE, G_FAR_PLANE);
+        gfx_renderBuffer(linProg, frameBuffers[2].d,depthStack[0],()=>{
+            gl.uniform3f(gl.getUniformLocation(linProg, 'u_clip'), G_NEAR_PLANE*G_FAR_PLANE, G_NEAR_PLANE-G_FAR_PLANE, G_FAR_PLANE);
         });
 
-        shader = linProg;
-        
         for(i=1; i<depthStack.length; i++){
-            gfx_renderBuffer(depthStack[i-1],depthStack[i]);
+            gfx_renderBuffer(downDepthProg,depthStack[i-1],depthStack[i]);
         }
 
-        shader = reprojectProg;
-        gfx_renderBuffer(frameBuffers[2],frameBuffers[nextswap], () => {
+        gfx_renderBuffer(reprojectProg, frameBuffers[2],frameBuffers[nextswap], () => {
             gl.activeTexture(gl.TEXTURE1);
             gl.bindTexture(gl.TEXTURE_2D, frameBuffers[swap].t);
-            gl.uniform1i(gl.getUniformLocation(shader, 'u_old'), 1);
+            gl.uniform1i(gl.getUniformLocation(reprojectProg, 'u_old'), 1);
 
-            gl.uniform3f(gl.getUniformLocation(shader, 'u_clip'), G_NEAR_PLANE*G_FAR_PLANE, G_NEAR_PLANE-G_FAR_PLANE, G_FAR_PLANE);
+            gl.uniform3f(gl.getUniformLocation(reprojectProg, 'u_clip'), G_NEAR_PLANE*G_FAR_PLANE, G_NEAR_PLANE-G_FAR_PLANE, G_FAR_PLANE);
 
             let inverter = [-2.0/(projectionMatrix[0]),
             -2.0/(projectionMatrix[5]),
             (1.0- projectionMatrix[8]) / projectionMatrix[0],
             (1.0+ projectionMatrix[9]) / projectionMatrix[5]];
 
-            gl.uniform4fv(gl.getUniformLocation(shader, 'u_proj'), inverter);
+            gl.uniform4fv(gl.getUniformLocation(reprojectProg, 'u_proj'), inverter);
 
             gl.activeTexture(gl.TEXTURE2);
             gl.bindTexture(gl.TEXTURE_2D, depthStack[0].t);
-            gl.uniform1i(gl.getUniformLocation(shader, 'd'), 2);
+            gl.uniform1i(gl.getUniformLocation(reprojectProg, 'd'), 2);
 
             for (let i = 0; i <= 5; ++i) {
                 gl.activeTexture(gl.TEXTURE5+i);
                 gl.bindTexture(gl.TEXTURE_2D, depthStack[1+i].t);
-                gl.uniform1i(gl.getUniformLocation(shader, 'd'+(i+1)), 5+i);
+                gl.uniform1i(gl.getUniformLocation(reprojectProg, 'd'+(i+1)), 5+i);
             }
 
-            gl.uniform1f(gl.getUniformLocation(shader, "u_time"), frame);
+            gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_time"), frame);
 
             let rvi = viewMatrixInv.map(killTranslation);
             let invertProjection =  mat4_multiply(rvi, projectionMatrixInv);
 
-            gl.uniformMatrix4fv(gl.getUniformLocation(shader, 'u_invVp'), false, invertProjection);
+            gl.uniformMatrix4fv(gl.getUniformLocation(reprojectProg, 'u_invVp'), false, invertProjection);
 
             let subFrames=8;
             let f = ~~(frame/subFrames) % (FRAMES * 2-2);
             gl.activeTexture(gl.TEXTURE3);
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, motionCubeTexture[Math.abs(f-(FRAMES-1))]);
-            gl.uniform1i(gl.getUniformLocation(shader, "u_cube1"), 3);
+            gl.uniform1i(gl.getUniformLocation(reprojectProg, "u_cube1"), 3);
 
             frame = (frame + 1);
 
             f = ~~(frame / subFrames) % (FRAMES * 2-2);
             gl.activeTexture(gl.TEXTURE4);
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, motionCubeTexture[Math.abs(f-(FRAMES-1))]);
-            gl.uniform1i(gl.getUniformLocation(shader, "u_cube2"), 4);
+            gl.uniform1i(gl.getUniformLocation(reprojectProg, "u_cube2"), 4);
 
-            gl.uniform1f(gl.getUniformLocation(shader, "u_interpolate"), (frame % subFrames)/subFrames);
-            gl.uniform1f(gl.getUniformLocation(shader, "u_aspect"), aspectRatio);
+            gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_interpolate"), (frame % subFrames)/subFrames);
+            gl.uniform1f(gl.getUniformLocation(reprojectProg, "u_aspect"), aspectRatio);
         });
 
         let downed = gfx_downSample(frameBuffers[nextswap],5,mipStack);
-        shader = copyProg;
-        gfx_renderBuffer(frameBuffers[nextswap],null,()=>{
+
+        gfx_renderBuffer(copyProg, frameBuffers[nextswap],null,()=>{
             gl.activeTexture(gl.TEXTURE1);
             gl.bindTexture(gl.TEXTURE_2D, downed.t);
-            gl.uniform1i(gl.getUniformLocation(shader, 'u_bloom'), 1);
+            gl.uniform1i(gl.getUniformLocation(copyProg, 'u_bloom'), 1);
         });
         swap = nextswap;
 
