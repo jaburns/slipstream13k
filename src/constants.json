@@ -4,11 +4,13 @@
     "G_NEAR_PLANE": 0.2,
     "G_FAR_PLANE": 100,
 
-    "G_MSG_STATE_UPDATE":    0,
-    "G_MSG_KEY_DOWN":        1,
-    "G_MSG_KEY_UP":          2,
-    "G_MSG_REQUEST_TERRAIN": 3,
-    "G_MSG_UPLOAD_TERRAIN":  4,
+    "G_MSG_STATE_UPDATE":      0,
+    "G_MSG_KEY_DOWN":          1,
+    "G_MSG_KEY_UP":            2,
+    "G_MSG_REQUEST_TERRAIN":   3,
+    "G_MSG_UPLOAD_TERRAIN":    4,
+    "G_MSG_SEND_ROOM_CODE":    5,
+    "G_MSG_RETURN_ROOM_SORRY": 6,
 
     "G_TERRAIN_WORLDSPACE_HEIGHT": 10,
     "G_TERRAIN_WORLDSPACE_SIZE": 100,

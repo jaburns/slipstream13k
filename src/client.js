@@ -55,17 +55,20 @@ let roomCode, Z = () =>
       , terrainStuff = terrainGen_getRenderer(mapHandles)
       , meshes = meshLoader_loadMeshesBlob(blobs[G_MODELS_BLOB])
 
+
     let scene = {
         $player: 0,
-        $objects: terrainStuff.meshes.map($mesh => ({
+        $objects: terrainStuff.meshes.map(($mesh,i) => ({
+            $id: 't'+i,
             $matrix: mat4_identity(),
             $mesh,
             $cull: 1,
             $prog: terrainProg,
             $tex: terrainStuff.$heightMapTexture
         })),
-        $ships: [],
+        $ships: []
     };
+
 
     let connect = () => {
         let socket = io();
@@ -73,8 +76,6 @@ let roomCode, Z = () =>
         socket.on("connect", () => {
             onkeydown = k => socket.emit(G_MSG_KEY_DOWN, k.keyCode);
             onkeyup = k => socket.emit(G_MSG_KEY_UP, k.keyCode);
-
-            console.log(roomCode);
 
             socket.on(G_MSG_STATE_UPDATE, s => {
                 lastState = currentState;
@@ -88,14 +89,21 @@ let roomCode, Z = () =>
                     $terrain: terrainGen_serializeHeightMap(terrainStuff.$heightMapTexture),
                     $mapHandles: mapHandles,
                 });
+                socket.emit(G_MSG_SEND_ROOM_CODE, roomCode);
             });
+
+            socket.on(G_MSG_RETURN_ROOM_SORRY, () => document.body.innerText = 'Sorry, that race has started!');
+
+            socket.emit(G_MSG_SEND_ROOM_CODE, roomCode);
         });
     };
 
-    let updateSceneFromGameState = state =>
-        scene.$ships = state.$playerStates.map(p => (
-            (state.$myId == p.$id && (scene.$player = p)),
-            {
+    let updateSceneFromGameState = state => {
+        scene.$ships = state.$playerStates.map(p => {
+            if (state.$myId == p.$id) 
+                scene.$player = p;
+
+            return {
                 $id: p.$id,
                 $matrix: mat4_fromRotationTranslationScale(
                     quat_fromYawPitchRoll(p.$yaw, p.$pitch, p.$roll),
@@ -105,8 +113,9 @@ let roomCode, Z = () =>
                 $mesh: meshes[G_MODEL_INDEX_ShipGameObject],
                 $cull: 0,
                 $prog: cubeProg
-            }
-        ));
+            };
+        });
+    };
 
     let update = () => {
         if (lastState && currentState) {

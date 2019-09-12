@@ -47,7 +47,7 @@ let filterObject = (obj, props) => {
 let state_createRoot = () => ({
     $myId: 0,
     $sounds: [],
-    $raceCountdown: 10 * G_TICK_MILLIS,
+    $raceCountdown: 30 * G_TICK_MILLIS,
     $playerStates: [],
 });
 
@@ -119,100 +119,80 @@ let state_update = rootState => {
 
     if (rootState.$raceCountdown > 0) {
         rootState.$raceCountdown--;
-
-        rootState.$playerStates.forEach(p => {
-            if (p.$racing)
-                state_updatePlayerOnDeck(p);
-            else
-                state_updatePlayerQueued(p);
-        });
-    } else {
-        rootState.$playerStates.forEach(p => {
-            if (p.$racing)
-                state_updatePlayerRacing(p);
-            else
-                state_updatePlayerQueued(p);
-        });
-
-        rootState.$playerStates.sort((a,b) => (b.$lap+b.$lapPosition) - (a.$lap+a.$lapPosition));
-        rootState.$playerStates.map((p,i) => p.$place = i + 1);
     }
+
+    rootState.$playerStates.forEach(p => {
+        state_updatePlayerRacing(p, rootState.$raceCountdown < 1);
+    });
+
+    rootState.$playerStates.sort((a,b) => (b.$lap+b.$lapPosition) - (a.$lap+a.$lapPosition));
+    rootState.$playerStates.map((p,i) => p.$place = i + 1);
 };
 
-let state_updatePlayerQueued = playerState => {
-    playerState.$camPos = [G_TERRAIN_WORLDSPACE_SIZE / 2, 50, G_TERRAIN_WORLDSPACE_SIZE / 2]
-    playerState.$camRot = [-0.707,0,0,0.707];
-};
-
-let state_updatePlayerOnDeck = playerState => {
-    let cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, 0, 0);
-    let offset = quat_mulVec3(cameraSeekRot, [0,0,1]);
-    let cameraSeekPos = vec3_plus(playerState.$position, offset);
-    cameraSeekPos[1] += 0.5;
-
-    playerState.$camPos = vec3_lerp(playerState.$camPos, cameraSeekPos, G_CAMERA_POS_LAG);
-    playerState.$camRot = quat_slerp(playerState.$camRot, cameraSeekRot, G_CAMERA_ROT_LAG);
-};
-
-let state_updatePlayerRacing = playerState => {
+let state_updatePlayerRacing = (playerState, raceStarted) => {
     playerState.$sounds = [];
 
-    let runControls = (theta, omega, keyA, keyB, thetaMax, omegaMax, accel, decelRoll) => {
-        if (playerState.$keysDown.indexOf(keyA) >= 0) {
-            if (playerState[omega] < 0) playerState[omega] = 0;
-            playerState[omega] += accel;
-        } else if (playerState.$keysDown.indexOf(keyB) >= 0) {
-            if (playerState[omega] > 0) playerState[omega] = 0;
-            playerState[omega] -= accel;
-        } else if (decelRoll) {
-            playerState[omega] = playerState[theta] * (G_ROLL_RESTORE - 1);
-        } else {
-            playerState[omega] *= G_PITCH_RESTORE;
+    let cameraSeekPos, cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, 0);
+
+    if (raceStarted)
+    {
+        let runControls = (theta, omega, keyA, keyB, thetaMax, omegaMax, accel, decelRoll) => {
+            if (playerState.$keysDown.indexOf(keyA) >= 0) {
+                if (playerState[omega] < 0) playerState[omega] = 0;
+                playerState[omega] += accel;
+            } else if (playerState.$keysDown.indexOf(keyB) >= 0) {
+                if (playerState[omega] > 0) playerState[omega] = 0;
+                playerState[omega] -= accel;
+            } else if (decelRoll) {
+                playerState[omega] = playerState[theta] * (G_ROLL_RESTORE - 1);
+            } else {
+                playerState[omega] *= G_PITCH_RESTORE;
+            }
+
+            playerState[omega] = Math.max(Math.min(playerState[omega], omegaMax), -omegaMax);
+
+            playerState[theta] += playerState[omega];
+
+            playerState[theta] = Math.max(Math.min(playerState[theta], thetaMax), -thetaMax);
+        };
+        runControls('$pitch', '$pitchVel', G_KEYCODE_DOWN, G_KEYCODE_UP, G_PITCH_MAX, G_PITCH_MAX_VEL, G_PITCH_ACCEL, 0);
+        runControls('$roll', '$rollVel', G_KEYCODE_LEFT, G_KEYCODE_RIGHT, G_ROLL_MAX, G_ROLL_MAX_VEL, G_ROLL_ACCEL, 1);
+
+        
+        playerState.$yaw += G_BANK_TURN_SPEED * playerState.$roll;
+
+        let orientation = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, playerState.$roll);
+        let accelVec = quat_mulVec3(orientation, [0, 0, -G_ACCEL]);
+
+        playerState.$velocity = vec3_plus(playerState.$velocity, accelVec);
+
+        if (vec3_length(playerState.$velocity) > G_MAX_SPEED)
+            playerState.$velocity = vec3_normalize(playerState.$velocity).map(x => x*G_MAX_SPEED);
+
+        playerState.$position = vec3_plus(playerState.$position, playerState.$velocity);
+
+        let col = collision_test(playerState.$position, playerState.$velocity);
+
+        if (col) {
+            if (col.length > 3) {
+                col.pop();
+                playerState.$pitch = G_CEILING_HIT_PITCH_RESET;
+            }
+            playerState.$velocity = col.map(x=> x * G_COLLISION_SPEED_LOSS);
+            playerState.$sounds.push(G_SOUNDID_HIT_WALL);
         }
 
-        playerState[omega] = Math.max(Math.min(playerState[omega], omegaMax), -omegaMax);
-
-        playerState[theta] += playerState[omega];
-
-        playerState[theta] = Math.max(Math.min(playerState[theta], thetaMax), -thetaMax);
-    };
-    runControls('$pitch', '$pitchVel', G_KEYCODE_DOWN, G_KEYCODE_UP, G_PITCH_MAX, G_PITCH_MAX_VEL, G_PITCH_ACCEL, 0);
-    runControls('$roll', '$rollVel', G_KEYCODE_LEFT, G_KEYCODE_RIGHT, G_ROLL_MAX, G_ROLL_MAX_VEL, G_ROLL_ACCEL, 1);
-
-    
-    playerState.$yaw += G_BANK_TURN_SPEED * playerState.$roll;
-
-    let orientation = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, playerState.$roll);
-    let accelVec = quat_mulVec3(orientation, [0, 0, -G_ACCEL]);
-
-    playerState.$velocity = vec3_plus(playerState.$velocity, accelVec);
-
-    if (vec3_length(playerState.$velocity) > G_MAX_SPEED)
-        playerState.$velocity = vec3_normalize(playerState.$velocity).map(x => x*G_MAX_SPEED);
-
-    playerState.$position = vec3_plus(playerState.$position, playerState.$velocity);
-
-    let col = collision_test(playerState.$position, playerState.$velocity);
-
-    if (col) {
-        if (col.length > 3) {
-            col.pop();
-            playerState.$pitch = G_CEILING_HIT_PITCH_RESET;
-        }
-        playerState.$velocity = col.map(x=> x * G_COLLISION_SPEED_LOSS);
-        playerState.$sounds.push(G_SOUNDID_HIT_WALL);
+        cameraSeekPos = vec3_minus(playerState.$position, playerState.$velocity.map(x => x*2));
+    }
+    else 
+    {
+        cameraSeekPos = vec3_plus(playerState.$position, quat_mulVec3(cameraSeekRot, [0,0,1]));
     }
 
-
-
-    let cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, 0);
-    let cameraSeekPos = vec3_minus(playerState.$position, playerState.$velocity.map(x => x*2));
     cameraSeekPos[1] += 0.5;
 
     playerState.$camPos = vec3_lerp(playerState.$camPos, cameraSeekPos, G_CAMERA_POS_LAG);
     playerState.$camRot = quat_slerp(playerState.$camRot, cameraSeekRot, G_CAMERA_ROT_LAG);
-
-
 
     playerState.$lapPosition = track_getLapPosition(playerState.$position);
 

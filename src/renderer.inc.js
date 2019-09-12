@@ -72,6 +72,8 @@ let shader = gfx_compileProgram(fullQuad_vert,sky_frag), renderer_create = () =>
         }
     };
 
+    let oldModelMatrices = {};
+
     let drawScene = scene => {
         gl.enable(gl.DEPTH_TEST);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -111,13 +113,13 @@ let shader = gfx_compileProgram(fullQuad_vert,sky_frag), renderer_create = () =>
             shader=obj.$prog;
             gl.useProgram(shader);
 
-            if (!obj.$oldModelMatrix)
-                obj.$oldModelMatrix = obj.$matrix;
+            if (!oldModelMatrices[obj.$id])
+                oldModelMatrices[obj.$id] = obj.$matrix;
 
-            let mvpOld = mat4_multiply(mat4_multiply(projectionMatrix,lastViewMatrix),obj.$oldModelMatrix);
+            let mvpOld = mat4_multiply(mat4_multiply(projectionMatrix,lastViewMatrix),oldModelMatrices[obj.$id]);
             let mvp = mat4_multiply(mat4_multiply(projectionMatrix,viewMatrix),obj.$matrix);
 
-            obj.$oldModelMatrix = obj.$matrix;
+            oldModelMatrices[obj.$id] = obj.$matrix;
 
             gl.uniformMatrix4fv(gl.getUniformLocation(shader, 'u_model'), false, obj.$matrix);
             gl.uniformMatrix4fv(gl.getUniformLocation(shader, 'u_view'), false, viewMatrix);

@@ -3,7 +3,7 @@
 //__include collision.inc.js
 //__include state.inc.js
 
-let state = state_createRoot();
+let raceStates = {};
 let newPlayerId = 1;
 let ready = 0;
 
@@ -13,20 +13,30 @@ module.exports = socket => {
         else fn();
     };
 
-    whenReady(() => {
-        let self = state_playerJoin(state, socket, newPlayerId++);
+    whenReady(() =>
+        socket.on(G_MSG_SEND_ROOM_CODE, code => {
+            if (!raceStates[code])
+                raceStates[code] = state_createRoot();
 
-        socket.on(G_MSG_KEY_DOWN, keyCode => {
-            if (self.$keysDown.indexOf(keyCode) < 0) self.$keysDown.push(keyCode);
-        });
+            if (raceStates[code].$raceCountdown < 1) {
+                socket.emit(G_MSG_RETURN_ROOM_SORRY);
+                return;
+            }
 
-        socket.on(G_MSG_KEY_UP, keyCode => {
-            let index = self.$keysDown.indexOf(keyCode);
-            if (index >= 0) self.$keysDown.splice(index, 1);
-        });
+            let self = state_playerJoin(raceStates[code], socket, newPlayerId++);
 
-        socket.on('disconnect', () => state_playerLeave(state, self));
-    });
+            socket.on(G_MSG_KEY_DOWN, keyCode => {
+                if (self.$keysDown.indexOf(keyCode) < 0) self.$keysDown.push(keyCode);
+            });
+
+            socket.on(G_MSG_KEY_UP, keyCode => {
+                let index = self.$keysDown.indexOf(keyCode);
+                if (index >= 0) self.$keysDown.splice(index, 1);
+            });
+
+            socket.on('disconnect', () => state_playerLeave(raceStates[code], self));
+        })
+    );
 
     if (!ready) {
         socket.on(G_MSG_UPLOAD_TERRAIN, data => {
@@ -37,8 +47,10 @@ module.exports = socket => {
             track_parseUploadedCurveHandles(data.$mapHandles);
 
             setInterval(() => {
-                state_update(state);
-                state_emitToAllPlayers(state);
+                for (let k in raceStates) {
+                    state_update(raceStates[k]);
+                    state_emitToAllPlayers(raceStates[k]);
+                }
             }, G_TICK_MILLIS);
         });
         socket.emit(G_MSG_REQUEST_TERRAIN);
