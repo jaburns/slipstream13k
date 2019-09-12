@@ -153,12 +153,19 @@ let Z = (roomCode, rez) =>
     resizeFunc();
 };
 
-I.onkeypress = e => {
-    if (e.keyCode == 13) {
-        let code = I.value.trim();
-        P.innerText='Loading...';
-        setTimeout(() => Z(code, 480), 9);
-    }
+// NOTE: deduplicating this code makes the zip bigger.
+
+Q.onclick = () => {
+    let code = I.value.trim();
+    P.innerText='Loading...';
+    setTimeout(() => Z(code, 480), 9);
 };
+
+W.onclick = () => {
+    let code = I.value.trim();
+    P.innerText='Loading...';
+    setTimeout(() => Z(code, 1080), 9);
+};
+
 
 onresize = resizeFunc;
