@@ -4,13 +4,46 @@
 
 // ===== Client code =============================================================
 
-let state_lerpPlayerStates = (a, b, t) => {
+
+/*
+let state_lerpIdThings = fn => (a, b, t) => {
     let result = [];
 
     b.forEach(s => {
         let prev = s;
-        a.forEach(s0 => s0.$id == s.$id && (prev = s0))
+        a.forEach(s0 => s0.$id == s.$id && (prev = s0));
+        result.push(fn(prev, s, t));
+    });
 
+    return result;
+};
+
+let state_lerpPlayerStates = state_lerpIdThings((a, b, t) => ({
+    $id: b.$id,
+    $position: vec3_lerp(a.$position, b.$position, t), 
+    $yaw: vec3_lerp([a.$yaw], [b.$yaw], t)[0],
+    $pitch: vec3_lerp([a.$pitch], [b.$pitch], t)[0],
+    $roll: vec3_lerp([a.$roll], [b.$roll], t)[0],
+
+    $place: b.$place,
+    $lap: b.$lap,
+
+    $camPos: vec3_lerp(a.$camPos, b.$camPos, t), 
+    $camRot: quat_slerp(a.$camRot, b.$camRot, t), 
+}));
+
+let state_lerpBullets = (a, b, t) => state_lerpIdThings((a, b, t) => ({
+    $id: b.$id,
+    $position: vec3_lerp(a.$position, b.$position, t), 
+}));
+*/
+
+let state_lerpIdThings = (a, b, t) => {
+    let result = [];
+
+    b.forEach(s => {
+        let prev = s;
+        a.forEach(s0 => s0.$id == s.$id && (prev = s0));
         result.push({
             $id: s.$id,
             $position: vec3_lerp(prev.$position, s.$position, t), 
@@ -27,13 +60,29 @@ let state_lerpPlayerStates = (a, b, t) => {
     });
 
     return result;
-}
+};
+
+let state_lerpBullets = (a, b, t) => {
+    let result = [];
+
+    b.forEach(s => {
+        let prev = s;
+        a.forEach(s0 => s0.$id == s.$id && (prev = s0));
+        result.push({
+            $id: s.$id,
+            $position: vec3_lerp(prev.$position, s.$position, t), 
+        });
+    });
+
+    return result;
+};
 
 let state_lerp = (a, b, t) => {
     return {
         $myId: b.$myId,
         $playerStates: state_lerpPlayerStates(a.$playerStates, b.$playerStates, t),
-        $raceCountdown: b.$raceCountdown
+        $raceCountdown: b.$raceCountdown,
+        $bullets: state_lerpBullets(a.$bullets, b.$bullets, t),
     };
 };
 
@@ -43,7 +92,15 @@ let state_createRoot = () => ({
     $myId: 0,
     $raceCountdown: G_SECONDS_TO_START * G_TICK_MILLIS,
     $playerStates: [],
+    $bullets: [],
 });
+
+// add bullet vel
+// add shoot button
+// draw bullets
+// add boost meter
+// allow player to boost
+// when race finish do a thing
 
 let state_sockets = {};
 
@@ -179,7 +236,7 @@ let state_updatePlayer = (playerState, countdown) => {
         if (playerState.$keysDown.indexOf(G_KEYCODE_LEFT) >= 0) playerState.$toyYaw += 0.1;
 
         cameraSeekRot = quat_fromYawPitchRoll(playerState.$toyYaw, playerState.$toyPitch, 0);
-        cameraSeekPos = vec3_plus(playerState.$position, quat_mulVec3(cameraSeekRot, [0,0,1]));
+        cameraSeekPos = vec3_plus(playerState.$position, quat_mulVec3(cameraSeekRot, [0,0,50]));
     }
 
     cameraSeekPos[1] += 0.5;
