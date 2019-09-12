@@ -13,8 +13,8 @@ module.exports = socket => {
         else fn();
     };
 
-    whenReady(() =>
-        socket.on(G_MSG_SEND_ROOM_CODE, code => {
+    whenReady(() => {
+        socket.on(G_MSG_UPLOAD_ROOM_CODE, code => {
             if (!raceStates[code])
                 raceStates[code] = state_createRoot();
 
@@ -35,8 +35,10 @@ module.exports = socket => {
             });
 
             socket.on('disconnect', () => state_playerLeave(raceStates[code], self));
-        })
-    );
+        });
+
+        socket.emit(G_MSG_REQUEST_ROOM_CODE);
+    });
 
     if (!ready) {
         socket.on(G_MSG_UPLOAD_TERRAIN, data => {

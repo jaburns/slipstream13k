@@ -12,16 +12,21 @@ let state_lerpPlayerStates = (a, b, t) => {
         a.forEach(s0 => s0.$id == s.$id && (prev = s0));
         result.push({
             $id: s.$id,
+
             $position: vec3_lerp(prev.$position, s.$position, t), 
+
+            $camPos: vec3_lerp(prev.$camPos, s.$camPos, t), 
+            $camRot: vec3_lerp(prev.$camRot, s.$camRot, t), 
+
             $yaw: vec3_lerp([prev.$yaw], [s.$yaw], t)[0],
             $pitch: vec3_lerp([prev.$pitch], [s.$pitch], t)[0],
             $roll: vec3_lerp([prev.$roll], [s.$roll], t)[0],
 
+            $boost: vec3_lerp([prev.$boost], [s.$boost], t)[0],
+
             $place: s.$place,
             $lap: s.$lap,
 
-            $camPos: vec3_lerp(prev.$camPos, s.$camPos, t), 
-            $camRot: vec3_lerp(prev.$camRot, s.$camRot, t), 
         });
     });
 
@@ -62,9 +67,6 @@ let state_createRoot = () => ({
     $bullets: [],
 });
 
-// add bullet vel
-// add shoot button
-// draw bullets
 // add boost meter
 // allow player to boost
 // when race finish do a thing
@@ -78,7 +80,7 @@ let state_playerJoin = (state, socket, $id) => {
         $keysDown: [],
 
         $id,
-        $position: track_getStartPosition(state.$playerStates.length),
+        $position: track_getStartPosition(state.$playerStates.length), // TODO replace with a counter in state, people can drop from starting line
         $yaw: track_getStartYaw(),
         $pitch: 0,
         $roll: 0,
@@ -89,6 +91,9 @@ let state_playerJoin = (state, socket, $id) => {
         $rollVel: 0,
         $pitchVel: 0,
         $velocity: [0,0,0],
+
+        $boost: 1,
+        $maxSpeed: G_MAX_SPEED,
 
         $place: 0,
         $checkpoint: 0,
@@ -133,6 +138,14 @@ let state_update = rootState => {
         state_updatePlayer(rootState, p, rootState.$raceCountdown);
     });
 
+    rootState.$playerStates.forEach(p => {
+        rootState.$playerStates.forEach(q => {
+            if (p != q) {
+                // bounce player p against q
+            } 
+        })
+    });
+
     rootState.$bullets.forEach(p => {
         p.$position = vec3_plus(p.$position, p.$velocity);
     });
@@ -149,6 +162,13 @@ let state_updatePlayer = (state, playerState, countdown) => {
 
     if (countdown < 1)
     {
+        if (playerState.$boost > G_BOOST_COST_SPEEDING && playerState.$keysDown.indexOf(G_KEYCODE_SPACE) >= 0) {
+            playerState.$boost -= G_BOOST_COST_SPEEDING;
+            playerState.$maxSpeed = G_MAX_SPEED_BOOSTING;
+        } else if (playerState.$maxSpeed > G_MAX_SPEED) {
+            playerState.$maxSpeed -= G_BOOST_END_DECEL;
+        }
+
         let runControls = (theta, omega, keyA, keyB, thetaMax, omegaMax, accel, decelRoll) => {
             if (playerState.$keysDown.indexOf(keyA) >= 0) {
                 if (playerState[omega] < 0) playerState[omega] = 0;
@@ -179,26 +199,25 @@ let state_updatePlayer = (state, playerState, countdown) => {
 
         playerState.$velocity = vec3_plus(playerState.$velocity, accelVec);
 
-        if (vec3_length(playerState.$velocity) > G_MAX_SPEED)
-            playerState.$velocity = vec3_normalize(playerState.$velocity).map(x => x*G_MAX_SPEED);
+        if (vec3_length(playerState.$velocity) > playerState.$maxSpeed)
+            playerState.$velocity = vec3_normalize(playerState.$velocity).map(x => x*playerState.$maxSpeed);
 
         playerState.$position = vec3_plus(playerState.$position, playerState.$velocity);
 
-        let col = collision_test(playerState.$position, playerState.$velocity);
+        let col = collision_test(playerState.$position, playerState.$velocity, () =>
+            playerState.$pitch = G_CEILING_HIT_PITCH_RESET);
 
         if (col) {
-            if (col.length > 3) {
-                col.pop();
-                playerState.$pitch = G_CEILING_HIT_PITCH_RESET;
-            }
             playerState.$velocity = col.map(x=> x * G_COLLISION_SPEED_LOSS);
             playerState.$sounds.push(G_SOUNDID_HIT_WALL);
         }
 
-        cameraSeekPos = vec3_minus(playerState.$position, playerState.$velocity.map(x => x*2));
+        cameraSeekPos = vec3_minus(playerState.$position, vec3_normalize(playerState.$velocity).map(x => x*G_CAMERA_Z_OFFSET));
         cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, 0);
 
-        if (playerState.$keysDown.indexOf(G_KEYCODE_CTRL) >= 0) {
+        if (playerState.$boost > G_BOOST_COST_SHOOTING && playerState.$keysDown.indexOf(G_KEYCODE_CTRL) >= 0) {
+            playerState.$boost -= G_BOOST_COST_SHOOTING;
+
             state.$bullets.push({
                 $id: 'b'+(state_bulletNewId++),
                 $ownerId: playerState.$id,
@@ -206,6 +225,11 @@ let state_updatePlayer = (state, playerState, countdown) => {
                 $rotation: cameraSeekRot.map(x=>x),
                 $velocity: quat_mulVec3(cameraSeekRot, [0,0,-1]),
             });
+        }
+
+        if (playerState.$keysDown.indexOf(G_KEYCODE_SPACE) < 0 && playerState.$keysDown.indexOf(G_KEYCODE_CTRL) < 0) {
+            playerState.$boost += G_BOOST_IDLE_RECOVERY;
+            if (playerState.$boost > 1) playerState.$boost = 1;
         }
     }
     else 
@@ -219,7 +243,7 @@ let state_updatePlayer = (state, playerState, countdown) => {
         cameraSeekPos = vec3_plus(playerState.$position, quat_mulVec3(cameraSeekRot, [0,0,1]));
     }
 
-    cameraSeekPos[1] += 0.5;
+    cameraSeekPos[1] += G_CAMERA_Y_OFFSET;
 
     playerState.$camPos = vec3_lerp(playerState.$camPos, cameraSeekPos, G_CAMERA_POS_LAG);
     playerState.$camRot = vec3_lerp(playerState.$camRot, cameraSeekRot, G_CAMERA_ROT_LAG);

@@ -96,12 +96,15 @@ let Z = (roomCode, rez) =>
                     $terrain: terrainGen_serializeHeightMap(terrainStuff.$heightMapTexture),
                     $mapHandles: mapHandles,
                 });
-                socket.emit(G_MSG_SEND_ROOM_CODE, roomCode);
             });
 
-            socket.on(G_MSG_RETURN_ROOM_SORRY, () => document.body.innerText = 'Sorry, that race has started!');
+            socket.on(G_MSG_RETURN_ROOM_SORRY, () => {
+                document.body.style.color = '#fff';
+                document.body.innerText = 'Sorry, that race has started!';
+            });
 
-            socket.emit(G_MSG_SEND_ROOM_CODE, roomCode);
+            socket.on(G_MSG_REQUEST_ROOM_CODE, () =>
+                socket.emit(G_MSG_UPLOAD_ROOM_CODE, roomCode));
         });
     };
 
@@ -135,7 +138,7 @@ let Z = (roomCode, rez) =>
 
         if (state.$raceCountdown > 0) {
             if (state.$playerStates.length < 2) {
-                scene.$text0 = 'awaiting'
+                scene.$text0 = 'awaiting';
                 scene.$text1 = 'another';
             } else {
                 scene.$text0 = '';
@@ -143,7 +146,7 @@ let Z = (roomCode, rez) =>
             }
         } else {
             scene.$text0 = scene.$player.$place + 'th';
-            scene.$text1 = 'Lap: ' + (scene.$player.$lap+1)+'/3';
+            scene.$text1 = ((scene.$player.$boost*100)|0) + ' : ' + (scene.$player.$lap+1)+'/3';
         }
     };
 
