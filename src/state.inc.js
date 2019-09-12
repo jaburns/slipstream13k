@@ -92,7 +92,7 @@ let state_playerJoin = (state, socket, $id) => {
         $pitchVel: 0,
         $velocity: [0,0,0],
 
-        $boost: 1,
+        $gunCooldown: 0,
         $maxSpeed: G_MAX_SPEED,
 
         $place: 0,
@@ -162,8 +162,7 @@ let state_updatePlayer = (state, playerState, countdown) => {
 
     if (countdown < 1)
     {
-        if (playerState.$boost > G_BOOST_COST_SPEEDING && playerState.$keysDown.indexOf(G_KEYCODE_SPACE) >= 0) {
-            playerState.$boost -= G_BOOST_COST_SPEEDING;
+        if (playerState.$keysDown.indexOf(G_KEYCODE_SPACE) >= 0) {
             playerState.$maxSpeed = G_MAX_SPEED_BOOSTING;
         } else if (playerState.$maxSpeed > G_MAX_SPEED) {
             playerState.$maxSpeed -= G_BOOST_END_DECEL;
@@ -215,21 +214,22 @@ let state_updatePlayer = (state, playerState, countdown) => {
         cameraSeekPos = vec3_minus(playerState.$position, vec3_normalize(playerState.$velocity).map(x => x*G_CAMERA_Z_OFFSET));
         cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, 0);
 
-        if (playerState.$boost > G_BOOST_COST_SHOOTING && playerState.$keysDown.indexOf(G_KEYCODE_CTRL) >= 0) {
-            playerState.$boost -= G_BOOST_COST_SHOOTING;
-
+        if (playerState.$gunCooldown > 0) {
+            playerState.$gunCooldown--;
+        } else if (playerState.$keysDown.indexOf(G_KEYCODE_CTRL) >= 0) {
+            playerState.$gunCooldown = G_GUN_COOLDOWN_FRAMES;
+            let bulletRot = quat_fromYawPitchRoll(
+                playerState.$yaw + (Math.random()-.5)*G_GUN_INACCURACY,
+                playerState.$pitch + (Math.random()-.5)*G_GUN_INACCURACY,
+                0
+            );
             state.$bullets.push({
                 $id: 'b'+(state_bulletNewId++),
                 $ownerId: playerState.$id,
                 $position: playerState.$position.map(x=>x),
-                $rotation: cameraSeekRot.map(x=>x),
-                $velocity: quat_mulVec3(cameraSeekRot, [0,0,-1]),
+                $rotation: bulletRot.map(x=>x),
+                $velocity: quat_mulVec3(bulletRot, [0,0,-1]),
             });
-        }
-
-        if (playerState.$keysDown.indexOf(G_KEYCODE_SPACE) < 0 && playerState.$keysDown.indexOf(G_KEYCODE_CTRL) < 0) {
-            playerState.$boost += G_BOOST_IDLE_RECOVERY;
-            if (playerState.$boost > 1) playerState.$boost = 1;
         }
     }
     else 
