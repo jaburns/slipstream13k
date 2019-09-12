@@ -38,7 +38,7 @@ let state_lerpBullets = (a, b, t) => state_lerpIdThings((a, b, t) => ({
 }));
 */
 
-let state_lerpIdThings = (a, b, t) => {
+let state_lerpPlayerStates = (a, b, t) => {
     let result = [];
 
     b.forEach(s => {
@@ -143,6 +143,7 @@ let state_emitToAllPlayers = rootState => {
     let packet = {
         $raceCountdown: rootState.$raceCountdown,
         $playerStates: rootState.$playerStates,
+        $bullets: rootState.$bullets,
     };
 
     rootState.$playerStates.forEach(p => {
@@ -236,7 +237,7 @@ let state_updatePlayer = (playerState, countdown) => {
         if (playerState.$keysDown.indexOf(G_KEYCODE_LEFT) >= 0) playerState.$toyYaw += 0.1;
 
         cameraSeekRot = quat_fromYawPitchRoll(playerState.$toyYaw, playerState.$toyPitch, 0);
-        cameraSeekPos = vec3_plus(playerState.$position, quat_mulVec3(cameraSeekRot, [0,0,50]));
+        cameraSeekPos = vec3_plus(playerState.$position, quat_mulVec3(cameraSeekRot, [0,0,1]));
     }
 
     cameraSeekPos[1] += 0.5;
