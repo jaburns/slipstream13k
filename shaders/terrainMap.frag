@@ -46,6 +46,14 @@ float getHeight(vec2 uv)
 
 void main()
 {
+// ===== Terrain debug mode ======
+//
+//    gl_FragColor = vec4(vec3(getHeight(v_uv)), 1);
+//    return;
+//
+// ===============================
+
+
     float height = getHeight(v_uv);
 
     vec3 directionalLight = normalize(vec3(0, -1, 2));

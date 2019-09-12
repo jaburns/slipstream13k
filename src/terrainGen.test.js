@@ -1,10 +1,14 @@
+let globalWidth = 512;
+let globalHeight = 512;
+
 //__include shaders.gen.js
 //__include gfx.inc.js
 //__include terrainGen.inc.js
 
 let blobs = __binaryBlobs;
 
-let trackCanvas = terrainGen_loadTrackCanvasFromBlob(blobs[G_MAP_BLOB]);
+let trackCanvas = terrainGen_loadTrackCanvasFromBlob([].slice.call(blobs[G_MAP_BLOB]).map(x=>x/255));
+document.body.appendChild(trackCanvas);
 
 let heightMapTex = gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D, heightMapTex);
@@ -54,12 +58,12 @@ let uniformSliderPair = label => {
 let shader = gfx_compileProgram(fullQuad_vert, terrainMap_frag);
 
 let update = () => {
-    C.width = C.height = 1024;
-    gl.viewport(0, 0, 1024, 1024);
+    C.width = C.height = 512;
+    gl.viewport(0, 0, 512, 512);
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    gfx_renderBuffer(shader, {t:heightMapTex,w:1024,h:1024}, 0, () => {
+    gfx_renderBuffer(shader, {t:heightMapTex,w:512,h:512}, 0, () => {
         gl.uniform1f (gl.getUniformLocation(shader, 'u_preScalePower'), uniformSlider('u_preScalePower'));
         gl.uniform1f (gl.getUniformLocation(shader, 'u_curveScale'), uniformSlider('u_curveScale'));
         gl.uniform1f (gl.getUniformLocation(shader, 'u_curveOffset'), uniformSlider('u_curveOffset'));
