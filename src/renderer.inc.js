@@ -5,7 +5,6 @@ let renderer_create = () => {
         , copyProg = gfx_compileProgram(fullQuad_vert,copy_frag)
         , downDepthProg = gfx_compileProgram(fullQuad_vert, downDepth_frag)
         , frameBuffers = [gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(),gfx_createFrameBufferTexture(0,0,true)]
-        , depthStack = math_range(0,9).map(gfx_createFrameBufferTexture)
         , swap = 0
         , frame = 0
         , cubeTexture = gfx_createCube(gfx_compileProgram(fullQuad_vert,sky_frag),1024,gl.UNSIGNED_BYTE,0)
@@ -16,9 +15,13 @@ let renderer_create = () => {
         , viewMatrix
         , viewMatrixInv
         , lastViewMatrix
-        , _mw = globalWidth
-        , _mh = globalHeight
-        , mipStack = math_range(0,9).map(() => gfx_createFrameBufferTexture(_mw>>=1, _mh>>=1))
+        , depthStack = []
+        , mipStack = [];
+
+    for (let i = 0, w = globalWidth, h = globalHeight; i < 9; ++i) {
+        depthStack.push(gfx_createFrameBufferTexture(w, h));
+        mipStack.push(gfx_createFrameBufferTexture(w>>=1, h>>=1));
+    }
 
     let killTranslation = (x,i) => i > 11 && i < 15 ? 0 : x;
 
