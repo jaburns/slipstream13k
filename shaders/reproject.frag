@@ -85,14 +85,11 @@ void main()
     offset.y*=u_aspect;
 
     //gl_FragColor = vec4(offset,0,1);
-    float i=color.r+mix(1.-sum*3.,0.,-camPos.z*0.01);
+    float i=color.r+mix(1.-sum*4.,0.,float(camPos.z<-99.));
     color.r = min(max(color.r,0.),1.);
 
     vec3 col = mix(mix(vec3(0,0,0.2),vec3(0.5,0,0.2),min(color.r*2.,1.)),vec3(1,0.9,0.7),max(0.,color.r-0.5)*2.);
     col = col*i;
-    //gl_FragColor = vec4(vec3(float(camPos.z<-50.)),1);
-    //gl_FragColor = vec4(norm*0.5+0.5,1);
-    //gl_FragColor = vec4(vec3(sum),1);
-    float depth = clamp(-camPos.z*0.025,0.,1.);
+    float depth = clamp(-camPos.z*0.01,0.,1.);
     gl_FragColor = vec4(mix(col,texture2D(u_old,uv_off+offset*0.0002*depth).rgb,0.95),1);
 }

@@ -70,10 +70,10 @@ let _terrainGen_renderHeightMap = (trackCanvas, uniforms) => {
         }
     });
 
-    //let _ms = 2048, mipStack = math_range(0,6).map(() => gfx_createFrameBufferTexture(_ms>>=1,_ms));
-    let _ms = 2048, mipStack = math_range(0,6).map(() => gfx_createFrameBufferTexture(1024,1024));
+    let _ms = 2048, mipStack = math_range(0,2).map(() => gfx_createFrameBufferTexture(_ms>>=1,_ms));
+    //let _ms = 2048, mipStack = math_range(0,6).map(() => gfx_createFrameBufferTexture(1024,1024));
 
-    return gfx_downSample(framebuffer,3,mipStack);
+    return gfx_downSample(framebuffer,2,mipStack);
 };
 
 let terrainGen_loadTrackCanvasFromBlob = mapHandles => {
