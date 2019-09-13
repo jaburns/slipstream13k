@@ -18,8 +18,7 @@ gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 let sliders = {};
 
 let defaults =
-{"u_preScalePower":1.1,"u_curveScale":4,"u_curveOffset":0.1,"u_postScalePower":1.5,"u_noise0":[0.05,32,0],"u_noise1":[0.2,8,0],"u_noise2":[0.4,4,1],"u_noise3":[0.6,0.5,3],"u_finalScale":1.6,"u_finalPower":0.9};
-//{"u_preScalePower":1.1,"u_curveScale":3.5,"u_curveOffset":0.1,"u_postScalePower":1.2,"u_noise0":[0.1,25,0],"u_noise1":[0.05,20,0.4],"u_noise2":[0.3,5,1],"u_noise3":[0.5,2,1.2],"u_finalScale":1.5,"u_finalPower":1.3};
+{"u_preScalePower":1.1,"u_curveScale":3.5,"u_curveOffset":0.1,"u_postScalePower":1.2,"u_noise0":[0.1,25,0],"u_noise1":[0.05,20,0.4],"u_noise2":[0.3,5,1],"u_noise3":[0.5,2,1.2],"u_finalScale":1.5,"u_finalPower":1.3};
 //{"u_preScalePower":1.2,"u_curveScale":2.87,"u_curveOffset":0.3,"u_postScalePower":1.4,"u_noise0":[0.05,26,1.4],"u_noise1":[0.08,15,0],"u_noise2":[0.3,5,1.1],"u_noise3":[0.5,2,3],"u_finalScale":1.5,"u_finalPower":1.3}
 
 let uniformSlider = label => {

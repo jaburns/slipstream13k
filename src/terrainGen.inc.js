@@ -147,9 +147,7 @@ let _terrainGen_getChunkMesh = (chunkX, chunkZ) => {
 let terrainGen_getRenderer = mapHandles => {
     let trackCanvas = terrainGen_loadTrackCanvasFromBlob(mapHandles);
     let heightMapFB = _terrainGen_renderHeightMap(trackCanvas, 
-
-{"u_preScalePower":1.1,"u_curveScale":4,"u_curveOffset":0.1,"u_postScalePower":1.5,"u_noise0":[0.05,32,0],"u_noise1":[0.2,8,0],"u_noise2":[0.4,4,1],"u_noise3":[0.6,0.5,3],"u_finalScale":1.6,"u_finalPower":0.9}
-
+        {"u_preScalePower":1.1,"u_curveScale":3.5,"u_curveOffset":0.1,"u_postScalePower":1.2,"u_noise0":[0.1,25,0],"u_noise1":[0.05,20,0.4],"u_noise2":[0.3,5,1],"u_noise3":[0.5,2,1.2],"u_finalScale":1.5,"u_finalPower":1.3}
     );
 
     let meshes = [];
