@@ -154,12 +154,17 @@ let state_updatePlayer = (state, playerState, countdown) => {
     if (playerState.$bullet > 0) playerState.$bullet--;
 
     let cameraSeekPos, cameraSeekRot;
+    let boosting = playerState.$keysDown.indexOf(G_KEYCODE_SPACE) >= 0;
+    if (boosting && !playerState.$boosting) {
+        playerState.$sounds.push(G_SOUNDID_BOOST);
+    }
+    playerState.$boosting = boosting;
 
     let random = () => Math.random() - .5;
 
     if (countdown < 1)
     {
-        if (playerState.$keysDown.indexOf(G_KEYCODE_SPACE) >= 0) {
+        if (boosting) {
             playerState.$maxSpeed = G_MAX_SPEED_BOOSTING;
         } else if (playerState.$maxSpeed > G_MAX_SPEED) {
             playerState.$maxSpeed -= G_BOOST_END_DECEL;
@@ -215,7 +220,7 @@ let state_updatePlayer = (state, playerState, countdown) => {
             }
         }
 
-        cameraSeekPos = vec3_minus(playerState.$position, vec3_normalize(playerState.$velocity).map(x => x*G_CAMERA_Z_OFFSET));
+        cameraSeekPos = vec3_minus(playerState.$position, vec3_normalize(playerState.$velocity).map(x => x*(boosting?G_CAMERA_BOOST_Z_OFFSET:G_CAMERA_Z_OFFSET)));
         cameraSeekRot = quat_fromYawPitchRoll(playerState.$yaw, playerState.$pitch, 0);
 
         if (playerState.$gunCooldown > 0) {
