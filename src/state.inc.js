@@ -134,15 +134,6 @@ let state_update = rootState => {
         state_updatePlayer(rootState, p, rootState.$raceCountdown);
     });
 
-    rootState.$playerStates.forEach(p => {
-        rootState.$playerStates.forEach(q => {
-            if (p != q && vec3_length(vec3_minus(p.$position, q.$position)) < G_SHIP_RADIUS) {
-                // TODO collision resolution
-                console.log('a collision between players');
-            }
-        })
-    });
-
     rootState.$bullets.forEach(p => {
         p.$position = vec3_plus(p.$position, p.$velocity);
     });
@@ -230,6 +221,7 @@ let state_updatePlayer = (state, playerState, countdown) => {
                 $rotation: bulletRot.map(x=>x),
                 $velocity: quat_mulVec3(bulletRot, [0,0,-1]),
             });
+            playerState.$sounds.push(G_SOUNDID_LASER);
         }
 
         state.$bullets.forEach(b => {
