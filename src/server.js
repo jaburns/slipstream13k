@@ -7,6 +7,35 @@ let raceStates = {};
 let newPlayerId = 1;
 let ready = 0;
 
+let interval = 0;
+
+let updateRaceCollectionState = () => {
+    let usedRooms = 0;
+    let emptyRooms = [];
+
+    for (let k in raceStates) {
+        if (raceStates[k].$playerStates.length < 1) emptyRooms.push(k);
+        else usedRooms++;
+    }
+
+    emptyRooms.forEach(k => { delete raceStates[k]; });
+
+    if (usedRooms < 1 && interval) {
+        clearInterval(interval);
+        interval = 0;
+    }
+    if (usedRooms > 0 && !interval) {
+        interval = setInterval(() => {
+            if (ready) {
+                for (let k in raceStates) {
+                    state_update(raceStates[k]);
+                    state_emitToAllPlayers(raceStates[k]);
+                }
+            }
+        }, G_TICK_MILLIS);
+    }
+};
+
 module.exports = socket => {
     let whenReady = fn => {
         if (!ready) setTimeout(() => whenReady(fn), 100);
@@ -24,6 +53,7 @@ module.exports = socket => {
             }
 
             let self = state_playerJoin(raceStates[code], socket, newPlayerId++);
+            updateRaceCollectionState();
 
             socket.on(G_MSG_KEY_DOWN, keyCode => {
                 if (self.$keysDown.indexOf(keyCode) < 0) self.$keysDown.push(keyCode);
@@ -34,7 +64,10 @@ module.exports = socket => {
                 if (index >= 0) self.$keysDown.splice(index, 1);
             });
 
-            socket.on('disconnect', () => state_playerLeave(raceStates[code], self));
+            socket.on('disconnect', () => {
+                state_playerLeave(raceStates[code], self);
+                updateRaceCollectionState();
+            });
         });
 
         socket.emit(G_MSG_REQUEST_ROOM_CODE);
@@ -47,13 +80,6 @@ module.exports = socket => {
 
             collision_parseUploadedData(data.$terrain);
             track_parseUploadedCurveHandles(data.$mapHandles);
-
-            setInterval(() => {
-                for (let k in raceStates) {
-                    state_update(raceStates[k]);
-                    state_emitToAllPlayers(raceStates[k]);
-                }
-            }, G_TICK_MILLIS);
         });
         socket.emit(G_MSG_REQUEST_TERRAIN);
     }
