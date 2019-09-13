@@ -21,10 +21,10 @@ let resizeFunc = () => {
     s.top = wide ? '0' : (innerHeight - C.clientHeight) / 2;
 };
 
-let Z = (roomCode, rez) =>
+let roomCode, Z = () =>
 {
-    C.width = globalWidth = rez/.5625;
-    C.height = globalHeight = rez;
+    C.width = globalWidth = 853;
+    C.height = globalHeight = 480;
 
 //__include soundbox-player.inc.js
 
@@ -138,15 +138,15 @@ let Z = (roomCode, rez) =>
 
         if (state.$raceCountdown > 0) {
             if (state.$playerStates.length < 2) {
-                scene.$text0 = 'awaiting';
-                scene.$text1 = 'another';
-            } else {
                 scene.$text0 = '';
-                scene.$text1 = state.$raceCountdown;
+                scene.$text1 = 'waiting';
+            } else {
+                scene.$text0 = ((state.$raceCountdown / G_TICK_MILLIS)|0);
+                scene.$text1 = '';
             }
         } else {
-            scene.$text0 = scene.$player.$place + 'th';
-            scene.$text1 = ((scene.$player.$boost*100)|0) + ' : ' + (scene.$player.$lap+1)+'/3';
+            scene.$text0 = '# '+scene.$player.$place;
+            scene.$text1 = 'Lap ' + (scene.$player.$lap+1)+'/3';
         }
     };
 
@@ -168,16 +168,12 @@ let Z = (roomCode, rez) =>
 
 // NOTE: deduplicating this code makes the zip bigger.
 
-Q.onclick = () => {
-    let code = I.value.trim();
-    P.innerText='Loading...';
-    setTimeout(() => Z(code, 480), 9);
-};
-
-W.onclick = () => {
-    let code = I.value.trim();
-    P.innerText='Loading...';
-    setTimeout(() => Z(code, 1080), 9);
+I.onkeypress = e => {
+    if (e.keyCode == 13) {
+        roomCode = I.value.trim();
+        P.innerText='Loading...';
+        setTimeout(Z, 9);
+    }
 };
 
 
