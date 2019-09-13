@@ -36,7 +36,7 @@ let _terrainGen_signedDistanceFill = ctx => {
     for (let y = 0; y < G_HEIGHTMAP_SIZE; ++y)
     {
         var dist = findEdgeDistance(x, y);
-        var color = 255*math_clamp01(dist / 32);
+        var color = 255*math_clamp(0,1,dist / 32);
 
         if (color < 0) color = 0;
         if (color > 255) color = 255;
