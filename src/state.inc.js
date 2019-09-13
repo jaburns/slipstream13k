@@ -143,7 +143,11 @@ let state_update = rootState => {
     rootState.$bullets.forEach(p => {
         p.$position = vec3_plus(p.$position, p.$velocity);
     });
-    rootState.$bullets = rootState.$bullets.filter(p => !collision_test(p.$position, p.$velocity));
+    rootState.$bullets = rootState.$bullets.filter(p => {
+        let hitSky = 0;
+        let hitGround = collision_test(p.$position, p.$velocity, () => hitSky = 1);
+        return !hitSky && !hitGround;
+    });
 
     rootState.$playerStates.sort((a,b) => (b.$lap+b.$lapPosition) - (a.$lap+a.$lapPosition));
     rootState.$playerStates.map((p,i) => p.$place = i + 1);
