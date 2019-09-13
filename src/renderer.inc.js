@@ -107,6 +107,8 @@ let renderer_create = () => {
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_proj'), false, projectionMatrix); // TODO maybe inline projection matrix in shaders since it's constant now.
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvp'), false, mvp);
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvpOld'), false, mvpOld);
+            gl.uniform1f(gl.getUniformLocation(obj.$prog, 'u_bright'),obj.$bullet);
+
 
             gl.bindBuffer(gl.ARRAY_BUFFER, obj.$mesh.v);
             let posLoc = gl.getAttribLocation(obj.$prog, 'a_position');
