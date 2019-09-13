@@ -353,6 +353,7 @@ let roomCode, Z = () =>
                 $cull: 0,
                 $prog: cubeProg,
                 $bullet: p.$bullet,
+                $boosting: p.$boosting,
             };
         }).concat(state.$bullets.map(b => ({
             $id: b.$id,
@@ -365,6 +366,7 @@ let roomCode, Z = () =>
             $cull: 0,
             $prog: cubeProg,
             $bullet: 10,
+            $boosting: 0,
         })));
 
         if (state.$raceCountdown > 0) {

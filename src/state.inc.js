@@ -23,6 +23,7 @@ let state_lerpPlayerStates = (a, b, t) => {
             $roll: vec3_lerp([prev.$roll], [s.$roll], t)[0],
 
             $bullet: s.$bullet,
+            $boosting: s.$boosting,
 
             $place: s.$place,
             $lap: s.$lap,
@@ -133,7 +134,7 @@ let state_update = rootState => {
     if (rootState.$raceCountdown > 0 && rootState.$playerStates.length > 1) {
         rootState.$raceCountdown--;
     }
-    rootState.$raceCountdown=0;
+
     rootState.$playerStates.forEach(p => {
         state_updatePlayer(rootState, p, rootState.$raceCountdown);
     });

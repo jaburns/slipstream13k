@@ -108,6 +108,7 @@ let renderer_create = () => {
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvp'), false, mvp);
             gl.uniformMatrix4fv(gl.getUniformLocation(obj.$prog, 'u_mvpOld'), false, mvpOld);
             gl.uniform1f(gl.getUniformLocation(obj.$prog, 'u_bright'),obj.$bullet);
+            gl.uniform1f(gl.getUniformLocation(obj.$prog, 'u_boosting'), obj.$boosting?1.1:.3);
 
 
             gl.bindBuffer(gl.ARRAY_BUFFER, obj.$mesh.v);
