@@ -25,6 +25,7 @@ let state_lerpPlayerStates = (a, b, t) => {
             $bullet: s.$bullet,
             $boosting: s.$boosting,
 
+            $won: s.$won,
             $place: s.$place,
             $lap: s.$lap,
         });
@@ -289,8 +290,7 @@ let state_updatePlayer = (state, playerState, countdown) => {
         playerState.$checkpoint = 0;
         if (++playerState.$lap >= 3) {
             playerState.$lap = 3;
-            playerState.$won = 1;
-            playerState.$lapPosition = 10 - playerState.$place;
+            playerState.$won = playerState.$place;
         }
     }
 };

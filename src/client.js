@@ -378,8 +378,8 @@ let roomCode, Z = () =>
                 scene.$text1 = '';
             }
         } else {
-            scene.$text0 = '# '+scene.$player.$place;
-            scene.$text1 = scene.$player.$lap > 2 ? '' : 'Lap ' + (scene.$player.$lap+1)+'/3';
+            scene.$text0 = '# '+(scene.$player.$won||scene.$player.$place);
+            scene.$text1 = scene.$player.$won 2 ? '' : 'Lap ' + (scene.$player.$lap+1)+'/3';
         }
     };
 
