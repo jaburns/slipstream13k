@@ -3,12 +3,12 @@
  * https://github.com/toji/gl-matrix
  */
 
+let math_clamp = (a, b, x) => x<a?a:x>b?b:x;
+
 let vec3_plus = (a, b) => a.map((x,i)=>x+b[i]);
 let vec3_minus = (a, b) => a.map((x,i)=>x-b[i]);
-let vec3_lerp = (a, b, t) => a.map((x,i)=> x + t*(b[i]-x));
+let vec3_lerp = (a, b, t) => a.map((x,i)=> x + math_clamp(0,1,t)*(b[i]-x));
 
-let math_clamp = (a, b, x) => x<a?a:x>b?b:x;
-let math_clamp01 = x => math_clamp(0,1,x);
 let math_range = (a, b) => Array(b-a).fill().map((x,i)=>i+a);
 
 let vec3_dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
