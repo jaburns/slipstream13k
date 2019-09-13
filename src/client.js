@@ -45,6 +45,7 @@ let roomCode, Z = () =>
       , lastReceiveState
       , lastState
       , currentState
+      , soundEffectsCopied = []
       , soundEffects = []
       , render = renderer_create()
 
@@ -227,7 +228,14 @@ let roomCode, Z = () =>
         // 
 
     ]
-    .map((x,i) => sbPlay(x, x=>soundEffects[i]=x));
+    .map((x,i) => {
+        soundEffectsCopied[i] = {c:0,f:[]};
+        for (let j = 0; j < 8; j++) 
+            sbPlay(x, y => soundEffectsCopied[i].f[j] = y);
+
+        soundEffects[i] = () =>
+            soundEffectsCopied[i].f[soundEffectsCopied[i].c = (1+soundEffectsCopied[i].c) % 8]();
+    });
 
     C.style.display='inline-block';
 
