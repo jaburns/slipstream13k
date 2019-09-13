@@ -12,11 +12,6 @@ float permute_f(float x) {
      return mod289_f(((x*34.0)+1.0)*x);
 }
 
-vec4 taylorInvSqrt_v4(vec4 r)
-{
-  return 1.79284291400159 - 0.85373472095314 * r;
-}
-
 float taylorInvSqrt_f(float r)
 {
   return 1.79284291400159 - 0.85373472095314 * r;
@@ -96,7 +91,7 @@ float snoise(vec4 v)
   vec4 p4 = grad4(j1.w, ip);
 
 // Normalise gradients
-  vec4 norm = taylorInvSqrt_v4(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+  vec4 norm = 1.79284291400159 - 0.85373472095314 * vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3));
   p0 *= norm.x;
   p1 *= norm.y;
   p2 *= norm.z;
