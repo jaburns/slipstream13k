@@ -190,7 +190,7 @@ let gfx_downSample = (buf,amt,mipStack) =>{
 
     shader = gfx_upProg;
 
-    for(i=amt-2; i>1; i--){
+    for(i=amt-2; i>0; i--){
         buf = mipStack[i];
         
         gfx_renderBuffer(shader,oldBuf,buf);

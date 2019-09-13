@@ -129,7 +129,7 @@ let state_update = rootState => {
     if (rootState.$raceCountdown > 0 && rootState.$playerStates.length > 1) {
         rootState.$raceCountdown--;
     }
-
+    rootState.$raceCountdown=0;
     rootState.$playerStates.forEach(p => {
         state_updatePlayer(rootState, p, rootState.$raceCountdown);
     });
