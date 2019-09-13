@@ -25,42 +25,33 @@ let renderer_create = () => {
 
     let killTranslation = (x,i) => i > 11 && i < 15 ? 0 : x;
 
-    let createTextTexture = () => {
-        let ctx = gfx_createCanvas2d(64,64);
+    let createDrawText = () => {
+        let ctx = gfx_createCanvas2d(256,128);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 16px sans-serif';
-
         let texture = gl.createTexture();
-
-        let update = (str0, str1) => {
-            ctx.clearRect(0, 0, 64, 64);
-            ctx.fillText(str0, 2, 46);
-            ctx.fillText(str1, 2, 62);
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, ctx.canvas);
-        };
-        update();
-
+        gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
-        return {
-            $update: update,
-            $texture: texture,
+        return (s0, s1) => {
+            ctx.clearRect(0, 0, 256, 128);
+            ctx.font = 'bold 64px sans-serif';
+            ctx.fillText(s0, 2, 128-2*32);
+            ctx.font = '28px sans-serif';
+            ctx.fillText(s1, 2, 128-1*32);
+
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, ctx.canvas);
+
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+            gl.useProgram(textProg);
+            gfx_renderBuffer(textProg, {t:texture,w:1,h:1});
+            gl.disable(gl.BLEND);
         };
     };
 
     let textProg = gfx_compileProgram(text_vert, text_frag);
-    let textTex = createTextTexture();
-
-    let drawText = (txt0, txt1) => {
-        textTex.$update(txt0, txt1);
-
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-        gl.useProgram(textProg);
-        gfx_renderBuffer(textProg, {t:textTex.$texture,w:1,h:1});
-        gl.disable(gl.BLEND);
-    };
+    let drawText = createDrawText();
 
     let oldModelMatrices = {};
 

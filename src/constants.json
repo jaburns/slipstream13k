@@ -33,7 +33,7 @@
     "G_SOUNDID_HIT_WALL": 0,
 
     "G_KEYCODE_SPACE": 32,
-    "G_KEYCODE_CTRL":  17,
+    "G_KEYCODE_CTRL":  90,
     "G_KEYCODE_LEFT":  37, 
     "G_KEYCODE_UP":    38, 
     "G_KEYCODE_RIGHT": 39, 
