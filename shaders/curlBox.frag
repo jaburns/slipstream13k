@@ -21,7 +21,7 @@ uniform float u_slice;
 void main()
 {
     float _Slice = u_slice*8.;
-  	float t = 0.02;
+  	float t = 0.05;
     gl_FragColor = vec4(0);
     vec3 dir = u_rot*vec3(v_uv*2.-1.,1);
     vec3 up = vec3(0,1,0);
