@@ -22,6 +22,8 @@ let state_lerpPlayerStates = (a, b, t) => {
             $pitch: vec3_lerp([prev.$pitch], [s.$pitch], t)[0],
             $roll: vec3_lerp([prev.$roll], [s.$roll], t)[0],
 
+            $bullet: s.$bullet,
+
             $place: s.$place,
             $lap: s.$lap,
         });
@@ -95,6 +97,8 @@ let state_playerJoin = (state, socket, $id) => {
         $checkpoint: 0,
         $lap: 0,
 
+        $bullet: 0,
+
         $toyYaw: track_getStartYaw(),
         $toyPitch: 0,
     };
@@ -146,6 +150,9 @@ let state_update = rootState => {
 let state_updatePlayer = (state, playerState, countdown) => {
     playerState.$sounds = [];
 
+    if (playerState.$won) playerState.$keysDown = [];
+    if (playerState.$bullet > 0) playerState.$bullet--;
+
     let cameraSeekPos, cameraSeekRot;
 
     let random = () => Math.random() - .5;
@@ -193,13 +200,19 @@ let state_updatePlayer = (state, playerState, countdown) => {
 
         playerState.$position = vec3_plus(playerState.$position, playerState.$velocity);
 
-        let col = collision_test(playerState.$position, playerState.$velocity, () =>
-            playerState.$pitch = G_CEILING_HIT_PITCH_RESET);
+        if (playerState.$won) {
+            if (playerState.$pitch < G_WIN_PITCH_MAX)
+                playerState.$pitch += G_WIN_PITCH_SPEED;
+        }
+        else {
+            let col = collision_test(playerState.$position, playerState.$velocity, () =>
+                playerState.$pitch = G_CEILING_HIT_PITCH_RESET);
 
-        if (col) {
-            playerState.$velocity = col.map(x=> x * G_COLLISION_SPEED_LOSS);
-            playerState.$sounds.push(G_SOUNDID_HIT_WALL);
-            playerState.$camShake = 1;
+            if (col) {
+                playerState.$velocity = col.map(x=> x * G_COLLISION_SPEED_LOSS);
+                playerState.$sounds.push(G_SOUNDID_HIT_WALL);
+                playerState.$camShake = 1;
+            }
         }
 
         cameraSeekPos = vec3_minus(playerState.$position, vec3_normalize(playerState.$velocity).map(x => x*G_CAMERA_Z_OFFSET));
@@ -230,6 +243,7 @@ let state_updatePlayer = (state, playerState, countdown) => {
                     playerState.$velocity = playerState.$velocity.map(x => x * G_BULLET_HIT_SPEED_LOSS);
                     playerState.$sounds.push(G_SOUNDID_HIT_WALL);
                     playerState.$camShake = 1;
+                    playerState.$bullet = G_BULLET_HIT_FLASH_FRAMES;
                 }
             }
         });
@@ -267,6 +281,10 @@ let state_updatePlayer = (state, playerState, countdown) => {
 
     if (playerState.$checkpoint == 3 && playerState.$lapPosition < .25 && playerState.$lapPosition >= 0.0) {
         playerState.$checkpoint = 0;
-        playerState.$lap++;
+        if (++playerState.$lap >= 3) {
+            playerState.$lap = 3;
+            playerState.$won = 1;
+            playerState.$lapPosition = 10 - playerState.$place;
+        }
     }
 };
