@@ -139,7 +139,7 @@ let renderer_create = () => {
         nextswap = (swap+1)%2;
 
         viewMatrix = mat4_multiply(
-            mat4_fromRotationTranslationScale(quat_conj(scene.$player.$camRot), [0,0,0], [1,1,1]),
+            mat4_fromRotationTranslationScale(quat_conj(quat_normalize(scene.$player.$camRot)), [0,0,0], [1,1,1]),
             mat4_fromRotationTranslationScale([0,0,0,1], scene.$player.$camPos.map(x=>-x), [1,1,1])
         );
         viewMatrixInv = 

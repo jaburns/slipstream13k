@@ -25,6 +25,9 @@ let vec3_reflect = (v, n, elasticity) => // elasticity: 1: no bounce -> 2: full 
 let vec3_length = a => Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
 let vec3_normalize = a => a.map(x=>x/vec3_length(a));
 
+let quat_length = a => Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2] + a[3]*a[3]);
+let quat_normalize = a => a.map(x=>x/quat_length(a));
+
 let vec3_bufferMap = (buffer, fn) => {
     let result = [];
     for (let i = 0; i < buffer.length - 2; i += 3)
