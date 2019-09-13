@@ -352,7 +352,7 @@ let roomCode, Z = () =>
                 $mesh: meshes[G_MODEL_INDEX_ShipGameObject],
                 $cull: 0,
                 $prog: cubeProg,
-                $bullet: 0
+                $bullet: p.$bullet,
             };
         }).concat(state.$bullets.map(b => ({
             $id: b.$id,
@@ -364,7 +364,7 @@ let roomCode, Z = () =>
             $mesh: meshes[G_MODEL_INDEX_ShipGameObject],
             $cull: 0,
             $prog: cubeProg,
-            $bullet: 10
+            $bullet: 10,
         })));
 
         if (state.$raceCountdown > 0) {
