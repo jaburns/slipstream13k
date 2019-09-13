@@ -2,6 +2,7 @@ varying vec3 v_normal;
 
 varying vec4 v_pos;
 varying vec4 v_posOld;
+uniform float u_bright;
 
 void main()
 {
@@ -13,5 +14,5 @@ void main()
 
     vec2 diff = (tpos_old*0.5+0.5)-(tpos*0.5+0.5);
 
-    gl_FragColor = vec4(clamp(dot(sunDir, normalize(v_normal)), 0., 1.),diff, 1);
+    gl_FragColor = vec4(clamp(dot(sunDir, normalize(v_normal)), 0., 1.)+u_bright,diff, 1);
 }
