@@ -379,7 +379,7 @@ let roomCode, Z = () =>
             }
         } else {
             scene.$text0 = '# '+(scene.$player.$won||scene.$player.$place);
-            scene.$text1 = scene.$player.$won 2 ? '' : 'Lap ' + (scene.$player.$lap+1)+'/3';
+            scene.$text1 = scene.$player.$won ? '' : 'Lap ' + (scene.$player.$lap+1)+'/3';
         }
     };
 
